@@ -193,6 +193,40 @@
 
   <section class="feature">
     <div class="feature__copy">
+      <p class="eyebrow">Updates</p>
+      <h2>New versions show up in the menu, not in your way.</h2>
+      <p>
+        Once a day, Colima Desktop checks for a new version with
+        <a href="https://sparkle-project.org">Sparkle</a>. When it finds one, the menu offers
+        <strong>Update to 0.7…</strong> — no window opens on its own. Choose it, read what
+        changed, and Sparkle installs the update and relaunches the app.
+      </p>
+      <p>
+        <strong>Check for Updates…</strong> asks right away; Settings → Updates turns the daily
+        check off. Every release is signed with the project's update key, and the app refuses an
+        update whose signature does not match the key it ships with.
+      </p>
+      <p>
+        Updates started with 0.6. Coming from 0.5, install the current version by hand once.
+      </p>
+    </div>
+    <!-- An illustration of the menu's last items with an update waiting, not a screenshot. -->
+    <figure class="menu-shot" role="img"
+            aria-label="Illustration of the bottom of the Colima Desktop menu offering Update to 0.7">
+      <div class="menu" aria-hidden="true">
+        <ul>
+          <li>Settings…<span class="key">⌘,</span></li>
+          <li>About Colima Desktop</li>
+          <li class="hl"><span class="ico">⬇</span>Update to 0.7…</li>
+          <li class="sep"></li>
+          <li>Quit Colima Desktop<span class="key">⌘Q</span></li>
+        </ul>
+      </div>
+    </figure>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
       <p class="eyebrow">Under the hood</p>
       <h2>Colima's CLI for the VM, Docker's API for the rest.</h2>
       <p>
@@ -210,8 +244,9 @@
     <div class="feature__copy">
       <p class="eyebrow">Built with</p>
       <p>
-        Swift 6 with strict concurrency, AppKit for the menu, SwiftUI for the windows, and
-        <a href="https://github.com/migueldeicaza/SwiftTerm">SwiftTerm</a> for the terminal.
+        Swift 6 with strict concurrency, AppKit for the menu, SwiftUI for the windows,
+        <a href="https://github.com/migueldeicaza/SwiftTerm">SwiftTerm</a> for the terminal and
+        <a href="https://sparkle-project.org">Sparkle</a> for updates.
         Layers are separate Swift package targets, so the compiler keeps the views away from
         processes and sockets. Tests cover the HTTP framing, log decoding and menu logic, and
         integration tests run against a real Colima.
