@@ -1,0 +1,71 @@
+// swift-tools-version: 6.2
+import PackageDescription
+
+/// Targets whose code runs on the main actor by default (AppKit / SwiftUI layers).
+let mainActorByDefault: [SwiftSetting] = [
+    .defaultIsolation(MainActor.self),
+]
+
+let package = Package(
+    name: "ColimaDesktopKit",
+    platforms: [.macOS(.v26)],
+    products: [
+        .library(name: "ColimaAppShell", targets: ["ColimaAppShell"]),
+    ],
+    dependencies: [
+        // Pinned exactly: 2.0 changes the public API.
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm", exact: "1.20.0"),
+    ],
+    targets: [
+        // Pure models, reducers and ports. Foundation only.
+        .target(name: "ColimaDomain"),
+
+        // Adapters: processes, colima CLI, Docker Engine API over a unix socket, file watching, system services.
+        .target(name: "ColimaInfrastructure", dependencies: ["ColimaDomain"]),
+
+        // Presentation logic: observable stores, view models, menu model. Never imports Infrastructure.
+        .target(name: "ColimaFeatures", dependencies: ["ColimaDomain"]),
+
+        // AppKit menu rendering, windows and SwiftUI views.
+        .target(
+            name: "ColimaUI",
+            dependencies: ["ColimaFeatures", "ColimaDomain"],
+            swiftSettings: mainActorByDefault
+        ),
+
+        // Embedded terminal; isolates the SwiftTerm dependency.
+        .target(
+            name: "ColimaTerminal",
+            dependencies: [
+                "ColimaFeatures",
+                "ColimaDomain",
+                .product(name: "SwiftTerm", package: "SwiftTerm"),
+            ],
+            swiftSettings: mainActorByDefault
+        ),
+
+        // Composition root: wires concrete adapters into the features and UI.
+        .target(
+            name: "ColimaAppShell",
+            dependencies: ["ColimaDomain", "ColimaInfrastructure", "ColimaFeatures", "ColimaUI", "ColimaTerminal"],
+            swiftSettings: mainActorByDefault
+        ),
+
+        // Fakes and helpers shared by the test targets.
+        .target(name: "ColimaTestSupport", dependencies: ["ColimaDomain", "ColimaFeatures"]),
+
+        .testTarget(name: "ColimaDomainTests", dependencies: ["ColimaDomain"]),
+        .testTarget(
+            name: "ColimaInfrastructureTests",
+            dependencies: ["ColimaInfrastructure", "ColimaDomain", "ColimaTestSupport"],
+            resources: [.copy("Fixtures")]
+        ),
+        .testTarget(name: "ColimaFeaturesTests", dependencies: ["ColimaFeatures", "ColimaDomain", "ColimaTestSupport"]),
+        .testTarget(name: "ColimaUITests", dependencies: ["ColimaUI", "ColimaFeatures", "ColimaDomain"]),
+        // Runs against the local colima and Docker; enabled with COLIMA_DESKTOP_IT=1.
+        .testTarget(
+            name: "ColimaIntegrationTests",
+            dependencies: ["ColimaInfrastructure", "ColimaFeatures", "ColimaDomain"]
+        ),
+    ]
+)

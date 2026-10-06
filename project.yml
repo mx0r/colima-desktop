@@ -1,0 +1,76 @@
+# XcodeGen spec — the source of truth. ColimaDesktop.xcodeproj and App/Info.plist are generated:
+#     xcodegen generate     (or: make gen)
+name: ColimaDesktop
+options:
+  bundleIdPrefix: com.enscope.macos
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    # Release builds override both from the git tag and the CI run number.
+    MARKETING_VERSION: "0.5"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  ColimaDesktopKit:
+    path: Packages/ColimaDesktopKit
+
+targets:
+  ColimaDesktop:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        excludes:
+          - "*.entitlements"
+    dependencies:
+      - package: ColimaDesktopKit
+        product: ColimaAppShell
+    info:
+      path: App/Info.plist
+      properties:
+        # The bundle is ColimaDesktop.app (PRODUCT_NAME); everything a user reads — the About
+        # panel, Login Items, notifications — comes from these.
+        CFBundleName: Colima Desktop
+        CFBundleDisplayName: Colima Desktop
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleIconName: AppIcon
+        # Menu bar app: no Dock icon until a window opens.
+        LSUIElement: true
+        LSMinimumSystemVersion: "26.0"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSHumanReadableCopyright: "© 2026 Miro Hudak"
+    entitlements:
+      path: App/ColimaDesktop.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.enscope.macos.ColimaDesktop
+        # No space: the name is load bearing in the Makefile, the release script and `pkill -x`.
+        PRODUCT_NAME: ColimaDesktop
+        PRODUCT_MODULE_NAME: ColimaDesktop
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        # Ad-hoc signing: there is no Developer ID on the development machine.
+        # scripts/build-release.sh re-signs with SIGN_IDENTITY when one is available.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEAD_CODE_STRIPPING: YES
+
+schemes:
+  ColimaDesktop:
+    build:
+      targets:
+        ColimaDesktop: all
+    run:
+      config: Debug
+    archive:
+      config: Release

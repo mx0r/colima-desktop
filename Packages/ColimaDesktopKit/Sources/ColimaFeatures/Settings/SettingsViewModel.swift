@@ -1,0 +1,131 @@
+import ColimaDomain
+import Foundation
+import Observation
+
+/// Editable settings. Changes are applied to the store after a short pause in typing.
+@MainActor
+@Observable
+public final class SettingsViewModel {
+    /// Settings being edited.
+    public var draft: AppSettings {
+        didSet {
+            guard draft != oldValue else { return }
+            scheduleApply()
+        }
+    }
+
+    /// Launch-at-login state, read live.
+    public private(set) var loginItemStatus: LoginItemStatus
+    /// Last login item error.
+    public private(set) var loginItemError: String?
+
+    @ObservationIgnored private let store: AppStore
+    @ObservationIgnored private let loginItem: any LoginItemControlling
+    @ObservationIgnored private let clock: any Clock<Duration>
+    @ObservationIgnored private var applyTask: Task<Void, Never>?
+
+    /// Delay between the last edit and applying it.
+    static let applyDelay = Duration.milliseconds(700)
+
+    /// Creates a view model for the store's current settings.
+    public init(store: AppStore, loginItem: any LoginItemControlling, clock: any Clock<Duration> = ContinuousClock()) {
+        self.store = store
+        self.loginItem = loginItem
+        self.clock = clock
+        draft = store.settings
+        loginItemStatus = loginItem.status
+    }
+
+    /// Values detected for the draft (placeholders and validation).
+    public var detected: DetectedEnvironment {
+        store.detectEnvironment(for: draft)
+    }
+
+    /// Profiles known to the store, for per-profile socket overrides.
+    public var profiles: [ProfileName] {
+        let names = store.snapshot.profiles.map(\.profile)
+        return names.isEmpty ? [store.snapshot.selectedProfile] : names
+    }
+
+    /// Socket path colima reports for a profile, or the default path.
+    public func detectedSocket(for profile: ProfileName) -> String {
+        if profile == store.snapshot.selectedProfile, let path = store.snapshot.details?.dockerSocketPath {
+            return path
+        }
+        return detected.paths.defaultDockerSocket(profile).path(percentEncoded: false)
+    }
+
+    /// Warning for the colima path override, if it is set but not executable.
+    public var colimaPathWarning: String? {
+        guard let override = draft.colimaExecutablePath?.trimmingCharacters(in: .whitespaces), !override.isEmpty else {
+            return detected.autoColimaExecutable == nil ? "colima was not found in PATH or Homebrew locations." : nil
+        }
+        return detected.colimaExecutable == nil ? "Not found or not executable." : nil
+    }
+
+    /// Binding helper for optional string settings: empty text means auto.
+    public func setOptional(_ keyPath: WritableKeyPath<AppSettings, String?>, _ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        draft[keyPath: keyPath] = trimmed.isEmpty ? nil : text
+    }
+
+    /// Switches the menu bar icon style. Applied at once so the menu bar updates while the user compares styles.
+    public func selectMenuBarIconStyle(_ style: MenuBarIconStyle) {
+        draft.menuBarIconStyle = style
+        applyNow()
+    }
+
+    /// Sets or clears the socket override for a profile.
+    public func setSocketOverride(_ text: String, for profile: ProfileName) {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+            draft.dockerSocketOverrides[profile.rawValue] = nil
+        } else {
+            draft.dockerSocketOverrides[profile.rawValue] = text
+        }
+    }
+
+    /// Applies pending edits immediately (e.g. when the window closes).
+    public func applyNow() {
+        applyTask?.cancel()
+        applyTask = nil
+        store.updateSettings(draft)
+    }
+
+    /// Restores defaults (keeps the selected profile).
+    public func resetToDefaults() {
+        var defaults = AppSettings.defaults
+        defaults.selectedProfile = draft.selectedProfile
+        draft = defaults
+    }
+
+    /// Turns launch at login on or off.
+    public func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try loginItem.setEnabled(enabled)
+            loginItemError = nil
+        } catch {
+            loginItemError = error.localizedDescription
+        }
+        loginItemStatus = loginItem.status
+    }
+
+    /// Re-reads the login item state (e.g. after returning from System Settings).
+    public func refreshLoginItemStatus() {
+        loginItemStatus = loginItem.status
+    }
+
+    /// Opens System Settings → Login Items.
+    public func openLoginItemSettings() {
+        loginItem.openSystemSettings()
+    }
+
+    private func scheduleApply() {
+        applyTask?.cancel()
+        let clock = clock
+        applyTask = Task { [weak self] in
+            do { try await clock.sleep(for: Self.applyDelay) } catch { return }
+            self?.applyNow()
+        }
+    }
+}

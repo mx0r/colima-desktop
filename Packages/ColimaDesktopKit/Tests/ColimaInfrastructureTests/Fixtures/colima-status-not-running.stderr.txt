@@ -1,0 +1,1 @@
+time="2026-10-06T09:47:26+02:00" level=fatal msg="colima [profile=doesnotexist] is not running"

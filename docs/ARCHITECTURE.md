@@ -1,0 +1,80 @@
+# Architecture
+
+## Layout
+
+```
+project.yml                      XcodeGen spec: thin app target + local package
+App/                             main.swift, Info.plist, entitlements, assets
+Packages/ColimaDesktopKit/
+  Sources/
+    ColimaDomain/                models, VMLifecycle reducer, ports (protocols), errors; Foundation only
+    ColimaInfrastructure/        process runner, colima CLI client, unix-socket HTTP, Docker Engine client,
+                                 file watcher, settings store, login item, notifications
+    ColimaFeatures/              AppStore, menu model builder, logs/terminal/settings view models
+    ColimaUI/                    NSStatusItem, NSMenu renderer, windows, SwiftUI views
+    ColimaTerminal/              SwiftTerm bridge (isolates the dependency)
+    ColimaAppShell/              composition root: live dependencies, action router, app delegate
+    ColimaTestSupport/           fakes and ManualClock for tests
+  Tests/                         one test target per layer, plus live integration tests
+```
+
+## Dependency rule
+
+```
+ColimaAppShell ──► ColimaUI ──► ColimaFeatures ──► ColimaDomain
+       │         ColimaTerminal ─┘                     ▲
+       └──────► ColimaInfrastructure ──────────────────┘
+```
+
+Features and UI never import Infrastructure. Only `ColimaAppShell` knows the concrete adapters. The package
+manifest enforces this: a forbidden import does not compile.
+
+## Concurrency
+
+- Swift 6 language mode, strict concurrency.
+- `ColimaUI`, `ColimaTerminal` and `ColimaAppShell` use `defaultIsolation(MainActor.self)`.
+- Stores and view models are `@MainActor @Observable`.
+- Adapters are `Sendable` and run their work off the main actor: process pipes, `NWConnection` callbacks,
+  stream decoding in detached tasks.
+- The menu renders from `Observations { store.snapshot }`. MainActor tasks run while an `NSMenu` is tracking,
+  so the open menu updates live.
+- Confirmation alerts run synchronously in the `@objc` menu action, never inside a task (a modal inside a
+  main-queue job would stall all MainActor work).
+
+## State and refresh
+
+`AppStore` holds one immutable `AppSnapshot`. `MenuModelBuilder` turns it into a `[MenuNode]` tree, and
+`MenuRenderer` reconciles that tree into `NSMenu` items by ID. Items and submenus are updated in place, so an
+open submenu stays open.
+
+`VMLifecycle` is a pure reducer `(state, event) -> effects` for start/stop/restart. It decides which actions are
+allowed and what the icon shows. Unknown statuses are never treated as "stopped".
+
+| Tier | Work | When |
+|---|---|---|
+| T0 | `colima list --json`, `GET /containers/json?all=1` | heartbeat (30 s by default), every 2 s while the menu is open, 250 ms after file changes in the colima/lima directories, 200 ms after Docker events, every 1 s during own VM operations |
+| T1 | `colima status --json`, Docker connect and version check | VM became running, profile switch, settings change |
+| T2 | VM usage over `colima ssh`, `/info`, `/version`, `/system/df` | only while the Information submenu is open (every 3 s) |
+
+Each tier is single-flight: concurrent requests coalesce into one re-run. A generation counter drops results
+that started before a profile switch or a settings change.
+
+## Processes
+
+`FoundationProcessRunner` runs programs without a shell. It drains both pipes while the process runs, so large
+output cannot deadlock it. It terminates the process on cancellation and timeout. It stops waiting for EOF
+2 s after exit, because daemonized grandchildren (lima host agents) may keep the pipe open.
+
+GUI apps start with a minimal `PATH`. The child `PATH` gets the colima directory and the usual install
+locations prepended.
+
+## Windows
+
+`WindowManager` hosts SwiftUI views in `NSWindow`s and remembers frames per window kind. While any window is
+open, the app switches to the `.regular` activation policy (Dock icon, ⌘-Tab). It goes back to `.accessory`
+when the last window closes.
+
+- **Logs:** a bounded ring buffer (50 000 lines by default) and a virtualized `NSTableView`. The UI updates are
+  batched every 100 ms.
+- **Terminal:** SwiftTerm `TerminalView` fed by a Docker exec session. Input is serialized through an
+  `AsyncStream`, and resizes are debounced.

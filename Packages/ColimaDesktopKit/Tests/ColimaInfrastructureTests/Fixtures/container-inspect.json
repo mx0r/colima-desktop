@@ -1,0 +1,249 @@
+{
+ "Id": "e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d",
+ "Created": "2026-10-06T06:49:28.821857516Z",
+ "Path": "docker-entrypoint.sh",
+ "Args": [
+  "redis-server",
+  "--save",
+  "20",
+  "1",
+  "--loglevel",
+  "warning",
+  "--requirepass",
+  "epDqiri7ICGxGxn"
+ ],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "Paused": false,
+  "Restarting": false,
+  "OOMKilled": false,
+  "Dead": false,
+  "Pid": 2757,
+  "ExitCode": 0,
+  "Error": "",
+  "StartedAt": "2026-10-06T06:49:28.861334896Z",
+  "FinishedAt": "0001-01-01T00:00:00Z"
+ },
+ "Image": "sha256:9dcf606e4339a50ac9e1fa994c9dfdd94fb62b220073c4aa4c54710db6ea8806",
+ "ResolvConfPath": "/var/lib/docker/containers/e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d/resolv.conf",
+ "HostnamePath": "/var/lib/docker/containers/e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d/hostname",
+ "HostsPath": "/var/lib/docker/containers/e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d/hosts",
+ "LogPath": "/var/lib/docker/containers/e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d/e6d0e29c9f85646708ba656ed939a6a3bc290ac8b331e3a22aa9d3974aa3cb4d-json.log",
+ "Name": "/redis-cache-1",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "MountLabel": "",
+ "ProcessLabel": "",
+ "AppArmorProfile": "docker-default",
+ "ExecIDs": null,
+ "HostConfig": {
+  "Binds": [
+   "redis_cache:/data:rw"
+  ],
+  "ContainerIDFile": "",
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {}
+  },
+  "NetworkMode": "redis_default",
+  "PortBindings": {
+   "6379/tcp": [
+    {
+     "HostIp": "",
+     "HostPort": "6379"
+    }
+   ]
+  },
+  "RestartPolicy": {
+   "Name": "always",
+   "MaximumRetryCount": 0
+  },
+  "AutoRemove": false,
+  "VolumeDriver": "",
+  "VolumesFrom": null,
+  "ConsoleSize": [
+   0,
+   0
+  ],
+  "CapAdd": null,
+  "CapDrop": null,
+  "CgroupnsMode": "private",
+  "Dns": null,
+  "DnsOptions": null,
+  "DnsSearch": null,
+  "ExtraHosts": [],
+  "GroupAdd": null,
+  "IpcMode": "private",
+  "Cgroup": "",
+  "Links": null,
+  "OomScoreAdj": 0,
+  "PidMode": "",
+  "Privileged": false,
+  "PublishAllPorts": false,
+  "ReadonlyRootfs": false,
+  "SecurityOpt": null,
+  "UTSMode": "",
+  "UsernsMode": "",
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "Isolation": "",
+  "CpuShares": 0,
+  "Memory": 0,
+  "NanoCpus": 0,
+  "CgroupParent": "",
+  "BlkioWeight": 0,
+  "BlkioWeightDevice": null,
+  "BlkioDeviceReadBps": null,
+  "BlkioDeviceWriteBps": null,
+  "BlkioDeviceReadIOps": null,
+  "BlkioDeviceWriteIOps": null,
+  "CpuPeriod": 0,
+  "CpuQuota": 0,
+  "CpuRealtimePeriod": 0,
+  "CpuRealtimeRuntime": 0,
+  "CpusetCpus": "",
+  "CpusetMems": "",
+  "Devices": null,
+  "DeviceCgroupRules": null,
+  "DeviceRequests": null,
+  "MemoryReservation": 0,
+  "MemorySwap": 0,
+  "MemorySwappiness": null,
+  "OomKillDisable": null,
+  "PidsLimit": null,
+  "Ulimits": null,
+  "CpuCount": 0,
+  "CpuPercent": 0,
+  "IOMaximumIOps": 0,
+  "IOMaximumBandwidth": 0,
+  "MaskedPaths": [
+   "/proc/acpi",
+   "/proc/asound",
+   "/proc/interrupts",
+   "/proc/kcore",
+   "/proc/keys",
+   "/proc/latency_stats",
+   "/proc/sched_debug",
+   "/proc/scsi",
+   "/proc/timer_list",
+   "/proc/timer_stats",
+   "/sys/devices/virtual/powercap",
+   "/sys/firmware"
+  ],
+  "ReadonlyPaths": [
+   "/proc/bus",
+   "/proc/fs",
+   "/proc/irq",
+   "/proc/sys",
+   "/proc/sysrq-trigger"
+  ]
+ },
+ "GraphDriver": {
+  "Data": null,
+  "Name": "overlayfs"
+ },
+ "Mounts": [
+  {
+   "Type": "volume",
+   "Name": "redis_cache",
+   "Source": "/var/lib/docker/volumes/redis_cache/_data",
+   "Destination": "/data",
+   "Driver": "local",
+   "Mode": "rw",
+   "RW": true,
+   "Propagation": ""
+  }
+ ],
+ "Config": {
+  "Hostname": "e6d0e29c9f85",
+  "Domainname": "",
+  "User": "",
+  "AttachStdin": false,
+  "AttachStdout": true,
+  "AttachStderr": true,
+  "ExposedPorts": {
+   "6379/tcp": {}
+  },
+  "Tty": false,
+  "OpenStdin": false,
+  "StdinOnce": false,
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": [
+   "redis-server",
+   "--save",
+   "20",
+   "1",
+   "--loglevel",
+   "warning",
+   "--requirepass",
+   "epDqiri7ICGxGxn"
+  ],
+  "Image": "redis:8.0-M02-alpine",
+  "Volumes": {
+   "/data": {}
+  },
+  "WorkingDir": "/data",
+  "Entrypoint": [
+   "docker-entrypoint.sh"
+  ],
+  "Labels": {
+   "com.docker.compose.config-hash": "9142161e22616e07107e0755843dfd4be97ecde2beca90a485303cc91815d3cb",
+   "com.docker.compose.container-number": "1",
+   "com.docker.compose.depends_on": "",
+   "com.docker.compose.image": "sha256:c6e7f06a4504c48cb127728f35e419256d5ebad66ad771476355dfa4974e9ae8",
+   "com.docker.compose.oneoff": "False",
+   "com.docker.compose.project": "redis",
+   "com.docker.compose.project.config_files": "/Users/dev/projects/redis/docker-compose.yaml",
+   "com.docker.compose.project.working_dir": "/Users/dev/projects/redis",
+   "com.docker.compose.service": "cache",
+   "com.docker.compose.version": "5.6.0"
+  }
+ },
+ "NetworkSettings": {
+  "SandboxID": "b5de6217f1d6d4abf7cb9e4a3f9db3bb124ceaa8c2b5ded0255bb6532bdf7a56",
+  "SandboxKey": "/var/run/docker/netns/b5de6217f1d6",
+  "Ports": {
+   "6379/tcp": [
+    {
+     "HostIp": "0.0.0.0",
+     "HostPort": "6379"
+    },
+    {
+     "HostIp": "::",
+     "HostPort": "6379"
+    }
+   ]
+  },
+  "Networks": {
+   "redis_default": {
+    "IPAMConfig": null,
+    "Links": null,
+    "Aliases": [
+     "redis-cache-1",
+     "cache",
+     "e6d0e29c9f85"
+    ],
+    "DriverOpts": null,
+    "GwPriority": 0,
+    "NetworkID": "8634652b058df792d36a1f096cb8a59483bbf5d748012883b03bbf4347564112",
+    "EndpointID": "a6c5b7d43782b4c76de46041c30225cd1bed01bc0ac4b97c3c6f5f184fea6968",
+    "Gateway": "172.21.0.1",
+    "IPAddress": "172.21.0.2",
+    "MacAddress": "d6:f9:c6:36:05:c1",
+    "IPPrefixLen": 16,
+    "IPv6Gateway": "",
+    "GlobalIPv6Address": "",
+    "GlobalIPv6PrefixLen": 0,
+    "DNSNames": [
+     "redis-cache-1",
+     "cache",
+     "e6d0e29c9f85"
+    ]
+   }
+  }
+ }
+}

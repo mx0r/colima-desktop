@@ -1,0 +1,115 @@
+name: Release
+
+# Tag a commit and the DMG builds itself:
+#
+#     git tag v0.6 && git push origin v0.6
+#
+# The version comes from the tag, so project.yml does not need bumping (bump it anyway, so local
+# builds stop calling themselves the old version). Use the manual trigger to prove the workflow
+# works without minting a real release.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v"
+        required: true
+        default: "0.0.0-test"
+
+permissions:
+  # Needed to create the release and attach the DMG to it.
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report the toolchain
+        run: |
+          sw_vers
+          echo "Xcodes on this image:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || echo "  (none beyond the default)"
+          xcodebuild -version
+
+      - name: Require a macOS 26 SDK
+        run: |
+          sdk=$(xcodebuild -showsdks | awk '/macosx/{print $NF}' | tail -1 | sed 's/macosx//')
+          echo "macOS SDK: $sdk"
+          if [ "${sdk%%.*}" -lt 26 ]; then
+            echo "::error::This project needs a macOS 26 SDK or newer; the runner has $sdk."
+            echo "Pick a newer Xcode with xcode-select, or pin a runner image that has one."
+            exit 1
+          fi
+
+      - name: Install the Metal Toolchain
+        # SwiftTerm compiles a Metal shader; Xcode 26 ships the Metal compiler separately.
+        run: xcrun metal -v >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Work out the version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building $version"
+
+      - name: Test, build and package
+        # The script runs the unit tests before packaging. Signing is ad hoc, which needs no
+        # secrets — the same thing a local build produces.
+        env:
+          MARKETING_VERSION: ${{ steps.version.outputs.version }}
+          CURRENT_PROJECT_VERSION: ${{ github.run_number }}
+        run: ./scripts/build-release.sh
+
+      - name: Locate the artefacts
+        id: artefacts
+        run: |
+          dmg=$(find builds -name "*.dmg" -print -quit)
+          [ -n "$dmg" ] || { echo "::error::no DMG was produced"; exit 1; }
+          echo "dmg=$dmg" >> "$GITHUB_OUTPUT"
+          echo "dir=$(dirname "$dmg")" >> "$GITHUB_OUTPUT"
+          shasum -a 256 "$dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ColimaDesktop-${{ steps.version.outputs.version }}
+          path: ${{ steps.artefacts.outputs.dir }}
+
+      - name: Publish the release
+        # Only for a real tag. A manual run leaves the DMG as an artefact instead.
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(mktemp)
+          {
+            echo "Colima Desktop ${{ steps.version.outputs.version }}"
+            echo
+            echo "A menu bar app for [Colima](https://github.com/abiosoft/colima). Requires macOS 26 and Colima."
+            echo
+            echo "**This build is signed ad hoc, not with an Apple Developer ID.**"
+            echo "macOS will refuse to open it on the first try: right-click the app"
+            echo "in Applications and choose Open, then confirm. Once only."
+            echo
+            echo '```'
+            cat "${{ steps.artefacts.outputs.dmg }}.sha256"
+            echo '```'
+          } > "$notes"
+
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Colima Desktop ${{ steps.version.outputs.version }}" \
+            --notes-file "$notes" \
+            "${{ steps.artefacts.outputs.dmg }}" \
+            "${{ steps.artefacts.outputs.dmg }}.sha256" \
+            "${{ steps.artefacts.outputs.dir }}/Read Me.txt"

@@ -1,0 +1,353 @@
+/*
+  Colima Desktop — landing page.
+  macOS chrome greys, the Colima logo's lime as the accent, SF for text and SF Mono wherever the
+  content is machine-readable (labels, commands, step numbers). No web fonts, no scripts, no
+  third-party requests.
+*/
+
+:root {
+  --paper: #f4f4f6;
+  --card: #ffffff;
+  --bar: #1c1d22;
+  --bar-text: #d8dae0;
+  --text: #15161a;
+  --muted: #62666f;
+  --line: rgba(16, 17, 20, 0.11);
+  --lime: #a9cf37;
+  --lime-ink: #16210a;
+  --accent: #4f7a12;
+  --menu: rgba(246, 246, 248, 0.94);
+  --menu-text: #1d1e22;
+  --menu-muted: #7b7f88;
+  --menu-line: rgba(0, 0, 0, 0.1);
+  --green: #34c759;
+  --radius: 14px;
+
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --page: 1080px;
+  --section: clamp(4rem, 9vw, 7rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0b0c0f;
+    --card: #131418;
+    --text: #edeef1;
+    --muted: #979ba4;
+    --line: rgba(255, 255, 255, 0.13);
+    --accent: #b9dc4e;
+    --menu: rgba(38, 39, 44, 0.94);
+    --menu-text: #eceef2;
+    --menu-muted: #8f939c;
+    --menu-line: rgba(255, 255, 255, 0.12);
+    --green: #30d158;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font: 400 17px/1.62 var(--sans);
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+h1, h2 { letter-spacing: -0.033em; font-weight: 680; margin: 0; }
+h1 { font-size: clamp(2.3rem, 5vw, 3.4rem); line-height: 1.06; }
+h2 { font-size: clamp(1.5rem, 2.8vw, 2rem); line-height: 1.16; }
+p { margin: 0 0 1rem; }
+
+.eyebrow,
+.label {
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.note { font-size: 13px; color: var(--muted); }
+
+code {
+  font: 400 0.92em/1 var(--mono);
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* --- the strip ----------------------------------------------------------- */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 30px;
+  padding: 0 14px;
+  background: var(--bar);
+  color: var(--bar-text);
+  font-size: 12px;
+}
+
+.bar__title { font-weight: 590; white-space: nowrap; }
+
+.bar__extras {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bar__extras > span { flex: none; font-size: 13px; line-height: 1; opacity: 0.62; }
+
+/* The app's own item: the llama, highlighted as if its menu were open. */
+.bar__self {
+  display: flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.bar__self img { width: 11px; height: 15px; }
+
+/* --- hero ---------------------------------------------------------------- */
+
+main { max-width: var(--page); margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.5rem); }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(2rem, 4vw, 3rem);
+  align-items: start;
+  padding: clamp(3.5rem, 8vw, 6rem) 0 var(--section);
+}
+
+.hero__icon { width: 96px; height: 96px; margin: 0 0 1.5rem -8px; }
+
+.lede { font-size: 19px; color: var(--muted); max-width: 46ch; margin: 1.4rem 0 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 2rem 0 0.9rem; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 15px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover { transform: translateY(-1px); border-color: var(--muted); }
+
+.btn--primary {
+  background: var(--lime);
+  border-color: transparent;
+  color: var(--lime-ink);
+}
+
+.btn--primary:hover { border-color: transparent; }
+
+.cmd {
+  font: 400 13px/1.5 var(--mono);
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: 0.85rem;
+  margin: 1.8rem 0 0;
+}
+
+/* --- the menu illustration ----------------------------------------------- */
+
+.menu-shot { margin: 0; position: relative; }
+
+.menu {
+  position: relative;
+  width: 272px;
+  max-width: 100%;
+  padding: 5px;
+  border: 1px solid var(--menu-line);
+  border-radius: 12px;
+  background: var(--menu);
+  color: var(--menu-text);
+  font-size: 13px;
+  line-height: 1.25;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 22px 50px -18px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.menu ul { list-style: none; margin: 0; padding: 0; }
+
+.menu li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 22px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.menu .sep { min-height: 0; height: 1px; padding: 0; margin: 5px 9px; background: var(--menu-line); border-radius: 0; }
+.menu .head { min-height: 20px; padding-top: 4px; font-size: 11px; font-weight: 600; color: var(--menu-muted); }
+.menu .off { color: var(--menu-muted); }
+.menu .dim { color: var(--menu-muted); }
+.menu .ind { padding-left: 21px; }
+.menu .hl { background: #0a63f0; color: #fff; }
+.menu .hl .sub { color: rgba(255, 255, 255, 0.78); }
+
+.menu .two { display: grid; gap: 0; }
+.menu .sub { font-size: 11px; color: var(--menu-muted); }
+
+.menu .ico { width: 14px; text-align: center; font-size: 11px; opacity: 0.85; flex: none; }
+.menu .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin: 0 2px; background: var(--green); }
+.menu .dot--grey { background: #8e8e93; }
+.menu .more { margin-left: auto; opacity: 0.6; }
+.menu .key { margin-left: auto; color: var(--menu-muted); font-size: 12px; }
+.menu .hl .more { opacity: 0.9; }
+
+.menu .banner { padding: 6px 9px 8px; }
+.menu .banner strong { font-weight: 650; }
+
+/* The open container submenu, cascading from its row like the real one. */
+.menu .has-sub { position: relative; }
+
+.menu--sub {
+  position: absolute;
+  z-index: 1;
+  width: 214px;
+  left: calc(100% + 4px);
+  top: -6px;
+  white-space: normal;
+}
+
+/* --- spec sheet ---------------------------------------------------------- */
+
+.spec {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(1.75rem, 4vw, 3rem);
+  padding: var(--section) 0;
+  border-top: 1px solid var(--line);
+}
+
+.spec__item p:last-child { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+/* --- feature sections ---------------------------------------------------- */
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+  padding: var(--section) 0;
+  border-top: 1px solid var(--line);
+}
+
+.feature__copy p:not(.eyebrow) { color: var(--muted); max-width: 52ch; }
+.feature__copy h2 { margin-bottom: 1.1rem; }
+.feature__copy strong { color: var(--text); font-weight: 590; }
+
+.icons img { border-radius: var(--radius); }
+
+.legend {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 1.25rem 0 0;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.legend dt { font: 500 11px/1.9 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.legend dd { margin: 0; }
+
+.terminal {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  background: #15161a;
+  color: #d9dbe0;
+  font: 400 12px/1.7 var(--mono);
+  overflow-x: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 18px 44px -20px rgba(0, 0, 0, 0.45);
+}
+
+.terminal .t { color: #8f939c; }
+.terminal .err { color: #ff6b62; }
+.terminal .mark { color: var(--lime); }
+
+/* --- install ------------------------------------------------------------- */
+
+.install { padding: var(--section) 0; border-top: 1px solid var(--line); }
+.install h2 { margin-bottom: 2.25rem; }
+
+.steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(1.5rem, 3.5vw, 2.5rem);
+  margin: 0;
+  padding: 0;
+}
+
+.steps li { border-top: 1px solid var(--line); padding-top: 1rem; }
+.steps p:last-child { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+/* --- footer -------------------------------------------------------------- */
+
+.foot {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 2rem clamp(1.25rem, 5vw, 2.5rem) 3.5rem;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.foot p { margin: 0 0 0.4rem; }
+
+/* --- narrow -------------------------------------------------------------- */
+
+/* The cascading submenu needs the full column; drop it before it would leave the page. */
+@media (max-width: 1100px) {
+  .menu--sub { display: none; }
+}
+
+@media (max-width: 860px) {
+  .hero,
+  .feature { grid-template-columns: minmax(0, 1fr); }
+
+  .hero { padding-top: 2.5rem; }
+  .menu--sub { display: none; }
+  .bar__extras > span:nth-child(-n+3) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

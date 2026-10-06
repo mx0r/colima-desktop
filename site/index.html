@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colima Desktop — Colima, from the menu bar</title>
+<meta name="description" content="A native macOS menu bar app for Colima: start and stop the VM, switch profiles, and manage containers — logs, an embedded shell, ports — without the docker CLI.">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- A mock menu bar with the app's own item highlighted, as if its menu below were open. -->
+<div class="bar" role="img" aria-label="A mock macOS menu bar with the Colima Desktop llama icon">
+  <span class="bar__title">Colima Desktop</span>
+  <div class="bar__extras" aria-hidden="true">
+    <span>◐</span><span>⇄</span><span>✱</span><span>☁</span><span>⚙</span>
+    <span class="bar__self"><img src="assets/llama-glyph.svg" alt=""></span>
+  </div>
+</div>
+
+<main>
+
+  <header class="hero">
+    <div class="hero__copy">
+      <img class="hero__icon" src="assets/icon.png" width="96" height="96" alt="">
+      <p class="eyebrow">macOS 26+ · Apple silicon &amp; Intel · v0.5</p>
+      <h1>Colima,<br>from the menu bar.</h1>
+      <p class="lede">
+        Start and stop the VM, switch profiles, and reach every container — its logs, a shell,
+        its ports — from one llama in the menu bar. Colima Desktop talks to Colima and to the
+        Docker Engine API directly, so the docker CLI is not needed.
+      </p>
+
+      <div class="actions">
+        <a class="btn btn--primary"
+           href="https://github.com/mx0r/colima-desktop/releases/download/v0.5/ColimaDesktop-0.5.dmg">
+          Download 0.5
+        </a>
+        <a class="btn" href="https://github.com/mx0r/colima-desktop">View on GitHub</a>
+      </div>
+
+      <p class="note">
+        ColimaDesktop-0.5.dmg ·
+        <a href="https://github.com/mx0r/colima-desktop/releases">all releases</a>
+      </p>
+
+      <p class="cmd">Needs Colima: <code>brew install colima</code></p>
+    </div>
+
+    <!-- An illustration of the real menu (content from a live session), not a screenshot. -->
+    <figure class="menu-shot" role="img"
+            aria-label="Illustration of the Colima Desktop menu: status, information, profile, VM actions and containers grouped by Compose project, with one container's submenu open">
+      <div class="menu" aria-hidden="true">
+        <ul>
+          <li class="banner">
+            <span class="dot"></span>
+            <span class="two"><strong>Colima is running</strong>
+              <span class="sub">Profile: default · 4 CPU · 8 GB · aarch64</span></span>
+          </li>
+          <li><span class="ico">ⓘ</span>Information<span class="more">›</span></li>
+          <li><span class="ico">≋</span>Profile: default<span class="more">›</span></li>
+          <li class="sep"></li>
+          <li class="off"><span class="ico">▶</span>Start</li>
+          <li><span class="ico">■</span>Stop…</li>
+          <li><span class="ico">↻</span>Restart…</li>
+          <li class="sep"></li>
+          <li class="head">Containers (4 of 5 running)</li>
+          <li class="head">localdb</li>
+          <li class="ind"><span class="dot"></span>
+            <span class="two">localdb-db-1<span class="sub">Up 2 hours · postgres:17</span></span>
+            <span class="more">›</span></li>
+          <li class="head">rabbitmq</li>
+          <li class="ind"><span class="dot"></span>
+            <span class="two">rabbitmq-rabbitmq-1<span class="sub">Up 2 hours · rabbitmq:4-management</span></span>
+            <span class="more">›</span></li>
+          <li class="head">redis</li>
+          <li class="ind hl has-sub"><span class="dot"></span>
+            <span class="two">redis-cache-1<span class="sub">Up 2 hours · redis:8.0-alpine</span></span>
+            <span class="more">›</span>
+            <div class="menu menu--sub">
+              <ul>
+                <li>Image: redis:8.0-alpine</li>
+                <li>Status: Up 2 hours</li>
+                <li>ID: e6d0e29c9f85</li>
+                <li>Service: cache</li>
+                <li>Ports: 6379→6379/tcp</li>
+                <li class="sep"></li>
+                <li><span class="ico">≣</span>Logs…</li>
+                <li><span class="ico">›_</span>Terminal…</li>
+                <li class="sep"></li>
+                <li><span class="ico">◎</span>Open localhost:6379</li>
+                <li class="sep"></li>
+                <li><span class="ico">■</span>Stop…</li>
+                <li><span class="ico">↻</span>Restart…</li>
+                <li class="sep"></li>
+                <li class="off"><span class="ico">⌫</span>Delete…</li>
+              </ul>
+            </div>
+          </li>
+          <li class="head">Other</li>
+          <li class="ind dim"><span class="dot dot--grey"></span>
+            <span class="two">wizardly_burnell<span class="sub">Exited (0) 3 hours ago</span></span>
+            <span class="more">›</span></li>
+          <li class="sep"></li>
+          <li>Settings…<span class="key">⌘,</span></li>
+          <li>About Colima Desktop</li>
+          <li class="sep"></li>
+          <li>Quit Colima Desktop<span class="key">⌘Q</span></li>
+        </ul>
+      </div>
+    </figure>
+  </header>
+
+  <section class="spec" aria-label="What it does">
+    <div class="spec__item">
+      <p class="label">Start · stop · restart</p>
+      <p>The VM's state is the menu bar icon. Stop and restart ask first, colima's progress shows
+        under the status while it works, and a notification says when it is done.</p>
+    </div>
+    <div class="spec__item">
+      <p class="label">Every container, grouped</p>
+      <p>Running and stopped, grouped by Compose project. Each one has its details, logs, a shell,
+        its published ports, start, stop and restart — and delete, once it is stopped.</p>
+    </div>
+    <div class="spec__item">
+      <p class="label">Logs that keep up</p>
+      <p>Follow or pause, filter with highlighting, stderr in red, and markers you drop yourself so
+        new lines are easy to spot. A bounded buffer and a virtualized list stay responsive.</p>
+    </div>
+    <div class="spec__item">
+      <p class="label">A shell in the container</p>
+      <p>An embedded terminal over the Engine API's exec endpoint — no Terminal.app round trip and
+        no docker CLI. The TTY resizes with the window.</p>
+    </div>
+    <div class="spec__item">
+      <p class="label">Information on demand</p>
+      <p>VM load, memory and disks, Docker engine facts and disk usage, read only while the
+        Information submenu is open. Click a row to copy its value.</p>
+    </div>
+    <div class="spec__item">
+      <p class="label">Zero configuration</p>
+      <p>Finds colima, its home directory and the Docker socket the way colima itself does.
+        Profiles switch from the menu; paths and sockets can be overridden in Settings.</p>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
+      <p class="eyebrow">Menu bar icon</p>
+      <h2>The llama tells you how the VM is doing.</h2>
+      <p>
+        Four styles, picked in Settings, all drawn in code from the Colima logo. Three are
+        template images that follow the menu bar's light and dark look; the status light keeps
+        its colours and is redrawn when the bar changes.
+      </p>
+      <dl class="legend">
+        <dt>Cubes</dt><dd>filled when running, hollow when stopped, filling up while it changes</dd>
+        <dt>Light</dt><dd>green, amber while starting or stopping, red when stopped</dd>
+        <dt>Symbols</dt><dd>play, pause while it changes, stop</dd>
+        <dt>Container</dt><dd>the first icon, kept for those who liked it</dd>
+      </dl>
+    </div>
+    <figure class="icons">
+      <img src="assets/menu-bar-icons.png" width="492" height="174"
+           alt="The four menu bar icon styles in running, changing, stopped and error states, on a light and a dark menu bar">
+    </figure>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
+      <p class="eyebrow">Logs</p>
+      <h2>Drop a marker, then watch what happens next.</h2>
+      <p>
+        <strong>Marker</strong> (<code>⌘M</code>) writes a timestamped line into the log, so the
+        output of the request you are about to make starts right below it. Scrolling up pauses
+        following; the status bar counts what arrived meanwhile.
+      </p>
+      <p>
+        The filter matches as you type and keeps markers visible. Copy and Save export exactly
+        the lines on screen. When the container stops, the window says so and offers to
+        reconnect from where it left off.
+      </p>
+    </div>
+    <!-- An illustration of the logs window's content, not a screenshot. -->
+    <pre class="terminal" role="img" aria-label="Illustration of container log lines with a marker line"><span class="t">2026-10-06 10:41:02.118</span>  Ready to accept connections
+<span class="t">2026-10-06 10:41:07.904</span>  Accepted 172.17.0.1:52114
+<span class="t">2026-10-06 10:41:09.412</span>  <span class="mark">──── Marker 10:41:09 ────</span>
+<span class="t">2026-10-06 10:41:11.003</span>  GET /api/orders 200 14ms
+<span class="t">2026-10-06 10:41:11.257</span>  <span class="err">slow query 212ms</span>
+<span class="t">2026-10-06 10:41:11.260</span>  GET /api/orders/42 200 9ms</pre>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
+      <p class="eyebrow">Under the hood</p>
+      <h2>Colima's CLI for the VM, Docker's API for the rest.</h2>
+      <p>
+        VM operations run <code>colima</code> without a shell. Everything about containers goes
+        straight to the profile's Docker socket over HTTP — listing, actions, streamed logs, and
+        the exec connection the terminal rides on.
+      </p>
+      <p>
+        The menu stays current without polling hard: it watches Colima's directories for the VM
+        starting and stopping, follows Docker's event stream for containers, and refreshes every
+        two seconds only while the menu is open — updating it in place, so an open submenu stays
+        open.
+      </p>
+    </div>
+    <div class="feature__copy">
+      <p class="eyebrow">Built with</p>
+      <p>
+        Swift 6 with strict concurrency, AppKit for the menu, SwiftUI for the windows, and
+        <a href="https://github.com/migueldeicaza/SwiftTerm">SwiftTerm</a> for the terminal.
+        Layers are separate Swift package targets, so the compiler keeps the views away from
+        processes and sockets. Tests cover the HTTP framing, log decoding and menu logic, and
+        integration tests run against a real Colima.
+      </p>
+    </div>
+  </section>
+
+  <section class="install">
+    <h2>Getting it running</h2>
+    <ol class="steps">
+      <li>
+        <p class="label">01 · Colima</p>
+        <p><code>brew install colima</code>, then <code>colima start</code> — or let the app
+          start it. Container features need the Docker runtime, which is Colima's default.</p>
+      </li>
+      <li>
+        <p class="label">02 · Install</p>
+        <p>Open the DMG and drag Colima Desktop to Applications.</p>
+      </li>
+      <li>
+        <p class="label">03 · Open it once by hand</p>
+        <p>The build is signed ad hoc rather than with an Apple Developer ID, so macOS refuses
+          the first launch. Right-click it in Applications, choose Open, confirm. Once only.</p>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p>
+    <a href="https://github.com/mx0r/colima-desktop">Source</a> ·
+    <a href="https://github.com/mx0r/colima-desktop/releases">Releases</a> ·
+    <a href="https://github.com/mx0r/colima-desktop#how-it-works">How it works</a>
+  </p>
+  <p class="note">Made by Miro Hudak. With help from Claude.</p>
+  <p class="note">Not affiliated with the Colima project. The llama is redrawn from the
+    <a href="https://github.com/abiosoft/colima">Colima</a> logo (MIT).</p>
+</footer>
+
+</body>
+</html>

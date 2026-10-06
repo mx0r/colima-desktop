@@ -1,0 +1,63 @@
+name: CI
+
+# Unit tests and a Debug build of the app on every push to main and every pull request.
+# Integration tests need a running colima and stay local (make test-live).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push supersedes the run for the same branch or PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report the toolchain
+        # When this breaks it is almost always because the runner image moved to a different
+        # Xcode, and the log should say so plainly.
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Require a macOS 26 SDK
+        # The package and the app target need macOS 26 (Swift tools 6.2, .macOS(.v26)). An older
+        # SDK fails with a wall of type errors, so check up front and say what is wrong.
+        run: |
+          sdk=$(xcodebuild -showsdks | awk '/macosx/{print $NF}' | tail -1 | sed 's/macosx//')
+          echo "macOS SDK: $sdk"
+          if [ "${sdk%%.*}" -lt 26 ]; then
+            echo "::error::This project needs a macOS 26 SDK or newer; the runner has $sdk."
+            exit 1
+          fi
+
+      - name: Install the Metal Toolchain
+        # SwiftTerm compiles a Metal shader; Xcode 26 ships the Metal compiler separately.
+        run: xcrun metal -v >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
+
+      - name: Install xcodegen
+        # project.yml is the source of truth; the .xcodeproj is generated and not committed.
+        run: brew install xcodegen
+
+      - uses: actions/cache@v4
+        with:
+          path: Packages/ColimaDesktopKit/.build
+          key: spm-${{ runner.os }}-${{ hashFiles('Packages/ColimaDesktopKit/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Unit tests
+        run: make test
+
+      - name: Build the app
+        run: make build
