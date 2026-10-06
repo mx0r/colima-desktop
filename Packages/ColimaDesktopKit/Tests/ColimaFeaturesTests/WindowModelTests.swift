@@ -240,6 +240,22 @@ struct SettingsViewModelTests {
         #expect(harness.settingsStore.saved.menuBarIconStyle == .llamaDot)
     }
 
+    @Test("Update settings forward to the updater")
+    func updater() async {
+        let harness = await StoreHarness().started()
+        let updater = FakeUpdater()
+        let sut = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), updater: updater, clock: ManualClock())
+        #expect(sut.hasUpdater)
+        #expect(sut.automaticallyChecksForUpdates)
+        sut.automaticallyChecksForUpdates = false
+        #expect(!updater.automaticallyChecksForUpdates)
+        sut.checkForUpdates()
+        #expect(updater.checkCount == 1)
+
+        let without = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), clock: ManualClock())
+        #expect(!without.hasUpdater)
+    }
+
     @Test("Blank overrides mean auto-detect")
     func blankOverrides() async {
         let harness = await StoreHarness().started()

@@ -4,7 +4,9 @@ import Foundation
 /// Builds the status menu from a snapshot. Pure and deterministic, so it is unit tested without AppKit.
 public enum MenuModelBuilder {
     /// Builds the top-level menu items.
-    public static func build(_ snapshot: AppSnapshot, now: Date = Date()) -> [MenuNode] {
+    ///
+    /// - Parameter pendingUpdate: Version found by a background update check, if any.
+    public static func build(_ snapshot: AppSnapshot, pendingUpdate: String? = nil, now: Date = Date()) -> [MenuNode] {
         var nodes: [MenuNode] = [statusNode(snapshot)]
         nodes.append(informationNode(snapshot))
         nodes.append(profileNode(snapshot))
@@ -15,9 +17,18 @@ public enum MenuModelBuilder {
         nodes.append(.separator("sep.app"))
         nodes.append(MenuNode(id: "settings", title: "Settings…", action: .showSettings, keyEquivalent: ","))
         nodes.append(MenuNode(id: "about", title: "About Colima Desktop", action: .showAbout))
+        nodes.append(updateNode(pendingUpdate))
         nodes.append(.separator("sep.quit"))
         nodes.append(MenuNode(id: "quit", title: "Quit Colima Desktop", action: .quit, keyEquivalent: "q"))
         return nodes
+    }
+
+    /// "Check for Updates…", or "Update to X…" once a background check found one.
+    static func updateNode(_ pendingUpdate: String?) -> MenuNode {
+        guard let pendingUpdate else {
+            return MenuNode(id: "updates", title: "Check for Updates…", action: .checkForUpdates)
+        }
+        return MenuNode(id: "updates", title: "Update to \(pendingUpdate)…", image: .symbol("arrow.down.circle.fill"), action: .checkForUpdates)
     }
 
     // MARK: Status

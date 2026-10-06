@@ -41,8 +41,20 @@ struct MenuModelBuilderTests {
         #expect(ids == [
             "status", MenuNodeID.information, "profiles", "sep.vm",
             "vm.start", "vm.stop", "vm.restart", "sep.containers",
-            "containers.empty", "sep.app", "settings", "about", "sep.quit", "quit",
+            "containers.empty", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
         ])
+    }
+
+    @Test("Check for Updates, or the pending update found in the background")
+    func updates() throws {
+        let idle = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), now: now)))
+        #expect(idle.title == "Check for Updates…")
+        #expect(idle.action == .checkForUpdates)
+
+        let pending = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), pendingUpdate: "0.6", now: now)))
+        #expect(pending.title == "Update to 0.6…")
+        #expect(pending.action == .checkForUpdates)
+        #expect(pending.image == .symbol("arrow.down.circle.fill"))
     }
 
     @Test("Running VM: stop and restart enabled, start disabled")

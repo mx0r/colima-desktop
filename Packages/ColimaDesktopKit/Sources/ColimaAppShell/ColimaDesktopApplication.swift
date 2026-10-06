@@ -2,6 +2,7 @@ import AppKit
 import ColimaFeatures
 import ColimaInfrastructure
 import ColimaUI
+import ColimaUpdates
 
 /// Entry point of the app bundle.
 public enum ColimaDesktopApplication {
@@ -22,15 +23,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var store: AppStore?
     private var statusItem: StatusItemController?
     private var router: ActionRouter?
+    private var updater: SparkleUpdater?
     private let windows = WindowManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
         let store = AppStore(dependencies: LiveEnvironment.dependencies())
-        let router = ActionRouter(store: store, windows: windows, loginItem: SMAppServiceLoginItem())
-        statusItem = StatusItemController(store: store) { [weak router] action in
+        let updater = SparkleUpdater()
+        let router = ActionRouter(store: store, windows: windows, loginItem: SMAppServiceLoginItem(), updater: updater)
+        statusItem = StatusItemController(store: store, updater: updater) { [weak router] action in
             router?.handle(action)
         }
+        self.updater = updater
         self.store = store
         self.router = router
         MainMenu.router = router
@@ -57,6 +61,7 @@ enum MainMenu {
 
         let appMenu = NSMenu()
         appMenu.addItem(item("About Colima Desktop", #selector(MenuTarget.showAbout), target: MenuTarget.shared))
+        appMenu.addItem(item("Check for Updates…", #selector(MenuTarget.checkForUpdates), target: MenuTarget.shared))
         appMenu.addItem(.separator())
         appMenu.addItem(item("Settings…", #selector(MenuTarget.showSettings), key: ",", target: MenuTarget.shared))
         appMenu.addItem(.separator())
@@ -101,5 +106,6 @@ enum MainMenu {
 
         @objc func showAbout() { MainMenu.router?.handle(.showAbout) }
         @objc func showSettings() { MainMenu.router?.handle(.showSettings) }
+        @objc func checkForUpdates() { MainMenu.router?.handle(.checkForUpdates) }
     }
 }

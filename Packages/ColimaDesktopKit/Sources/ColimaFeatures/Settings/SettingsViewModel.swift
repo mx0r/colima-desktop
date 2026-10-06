@@ -21,6 +21,7 @@ public final class SettingsViewModel {
 
     @ObservationIgnored private let store: AppStore
     @ObservationIgnored private let loginItem: any LoginItemControlling
+    @ObservationIgnored private let updater: (any UpdateControlling)?
     @ObservationIgnored private let clock: any Clock<Duration>
     @ObservationIgnored private var applyTask: Task<Void, Never>?
 
@@ -28,9 +29,15 @@ public final class SettingsViewModel {
     static let applyDelay = Duration.milliseconds(700)
 
     /// Creates a view model for the store's current settings.
-    public init(store: AppStore, loginItem: any LoginItemControlling, clock: any Clock<Duration> = ContinuousClock()) {
+    public init(
+        store: AppStore,
+        loginItem: any LoginItemControlling,
+        updater: (any UpdateControlling)? = nil,
+        clock: any Clock<Duration> = ContinuousClock()
+    ) {
         self.store = store
         self.loginItem = loginItem
+        self.updater = updater
         self.clock = clock
         draft = store.settings
         loginItemStatus = loginItem.status
@@ -113,6 +120,20 @@ public final class SettingsViewModel {
     /// Re-reads the login item state (e.g. after returning from System Settings).
     public func refreshLoginItemStatus() {
         loginItemStatus = loginItem.status
+    }
+
+    /// Whether the app can update itself (false in builds without an updater).
+    public var hasUpdater: Bool { updater != nil }
+
+    /// Background update checks. Persisted by the updater itself.
+    public var automaticallyChecksForUpdates: Bool {
+        get { updater?.automaticallyChecksForUpdates ?? false }
+        set { updater?.automaticallyChecksForUpdates = newValue }
+    }
+
+    /// Checks for updates now.
+    public func checkForUpdates() {
+        updater?.checkForUpdates()
     }
 
     /// Opens System Settings → Login Items.

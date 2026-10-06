@@ -11,11 +11,13 @@ final class ActionRouter {
     private let store: AppStore
     private let windows: WindowManager
     private let loginItem: any LoginItemControlling
+    private let updater: (any UpdateControlling)?
 
-    init(store: AppStore, windows: WindowManager, loginItem: any LoginItemControlling) {
+    init(store: AppStore, windows: WindowManager, loginItem: any LoginItemControlling, updater: (any UpdateControlling)?) {
         self.store = store
         self.windows = windows
         self.loginItem = loginItem
+        self.updater = updater
     }
 
     /// Handles a menu action. Confirmation runs synchronously, before any task starts.
@@ -45,6 +47,8 @@ final class ActionRouter {
             showSettings()
         case .showAbout:
             AboutPanel.show(snapshot: store.snapshot)
+        case .checkForUpdates:
+            updater?.checkForUpdates()
         case .quit:
             NSApp.terminate(nil)
         }
@@ -92,7 +96,7 @@ final class ActionRouter {
 
     private func showSettings() {
         guard !windows.focus("settings") else { return }
-        let model = SettingsViewModel(store: store, loginItem: loginItem)
+        let model = SettingsViewModel(store: store, loginItem: loginItem, updater: updater)
         windows.show(
             id: "settings",
             title: "Colima Desktop Settings",

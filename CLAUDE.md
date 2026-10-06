@@ -33,7 +33,13 @@ A release is a tag; the workflow does the rest. **In this order:**
    `scripts/build-release.sh` (tests included) on a macOS runner and publishes the DMG, its
    checksum and the readme to a GitHub release.
 5. Verify what shipped rather than assuming: download the DMG, `shasum -c` it, mount it, and read
-   `CFBundleShortVersionString` out of the app.
+   `CFBundleShortVersionString` out of the app. The release must carry `appcast.xml`, and
+   `curl -sL https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml` must
+   show the new version — that is what installed copies read.
+
+The update signing key (README → Update signing key) never passes through you: the private key
+lives in the user's keychain and the `SPARKLE_ED_PRIVATE_KEY` secret. Never print it, export it to
+a file, or ask for it. The public key in `project.yml` is fine to read and change.
 
 `.github/workflows/pages.yml` publishes `site/` to <https://mx0r.github.io/colima-desktop/> on
 every push to main that touches it. `.github/workflows/ci.yml` runs tests and a build on pushes
@@ -73,6 +79,12 @@ in the Makefile, the scheme, the release script and `pkill -x`. Everything a use
 - **`colima list --json` is NDJSON**, one object per profile per line.
 - **Fill animations start at frame 1**: frame 0 of the cube/rib animation looks exactly like
   "stopped".
+- **Hardened runtime is off in `project.yml`**: with ad-hoc signing, library validation refuses
+  to load `Sparkle.framework`. `build-release.sh` adds the runtime only for a real identity.
+- **Sparkle's nested code is signed inside-out** (XPC services, Autoupdate, Updater.app, the
+  framework, then the app) in `build-release.sh`; signing only the app breaks with a Developer ID.
+- **A menu bar app needs Sparkle's gentle reminders** (`SparkleUpdater`): a scheduled check that
+  finds an update sets `pendingUpdateVersion` for the menu instead of opening a window.
 
 ## Verifying changes
 

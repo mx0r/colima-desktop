@@ -8,11 +8,13 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
     private let store: AppStore
+    private let updater: (any UpdateControlling)?
     private let actionTarget: MenuActionTarget
     private lazy var renderer = MenuRenderer(target: actionTarget, submenuDelegate: self)
     private var observationTask: Task<Void, Never>?
     private var animationTask: Task<Void, Never>?
     private var lastSnapshot: AppSnapshot?
+    private var lastPendingUpdate: String?
     private var iconKey: IconKey?
     private var appearanceObservation: NSKeyValueObservation?
 
@@ -28,8 +30,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     static let animationInterval = Duration.milliseconds(400)
 
     /// Creates the status item. `onAction` receives every menu command.
-    public init(store: AppStore, onAction: @escaping (MenuAction) -> Void) {
+    public init(store: AppStore, updater: (any UpdateControlling)? = nil, onAction: @escaping (MenuAction) -> Void) {
         self.store = store
+        self.updater = updater
         actionTarget = MenuActionTarget(handler: onAction)
         super.init()
         menu.delegate = self
@@ -45,9 +48,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func observe() {
-        observationTask = Task { [weak self, store] in
-            let changes = Observations { (store.snapshot, store.settings.menuBarIconStyle) }
-            for await (snapshot, style) in changes {
+        observationTask = Task { [weak self, store, updater] in
+            let changes = Observations { (store.snapshot, store.settings.menuBarIconStyle, updater?.pendingUpdateVersion) }
+            for await (snapshot, style, _) in changes {
                 guard let self else { return }
                 self.render(snapshot, style: style)
             }
@@ -56,9 +59,11 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle) {
         updateIcon(snapshot: snapshot, style: style)
-        guard snapshot != lastSnapshot else { return }
+        let pendingUpdate = updater?.pendingUpdateVersion
+        guard snapshot != lastSnapshot || pendingUpdate != lastPendingUpdate else { return }
         lastSnapshot = snapshot
-        renderer.render(MenuModelBuilder.build(snapshot), into: menu)
+        lastPendingUpdate = pendingUpdate
+        renderer.render(MenuModelBuilder.build(snapshot, pendingUpdate: pendingUpdate), into: menu)
     }
 
     private func updateIcon(snapshot: AppSnapshot? = nil, style: MenuBarIconStyle? = nil) {

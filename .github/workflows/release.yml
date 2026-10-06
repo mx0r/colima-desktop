@@ -65,11 +65,13 @@ jobs:
           echo "Building $version"
 
       - name: Test, build and package
-        # The script runs the unit tests before packaging. Signing is ad hoc, which needs no
-        # secrets — the same thing a local build produces.
+        # The script runs the unit tests before packaging. Code signing is ad hoc, which needs no
+        # secrets. The update signing key is a secret: it signs the DMG for Sparkle and the
+        # script checks that signature against the public key inside the app.
         env:
           MARKETING_VERSION: ${{ steps.version.outputs.version }}
           CURRENT_PROJECT_VERSION: ${{ github.run_number }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: ./scripts/build-release.sh
 
       - name: Locate the artefacts
@@ -77,6 +79,8 @@ jobs:
         run: |
           dmg=$(find builds -name "*.dmg" -print -quit)
           [ -n "$dmg" ] || { echo "::error::no DMG was produced"; exit 1; }
+          # Installed copies find updates through this file; a release without it is invisible to them.
+          [ -f "$(dirname "$dmg")/appcast.xml" ] || { echo "::error::no appcast.xml — is the SPARKLE_ED_PRIVATE_KEY secret set?"; exit 1; }
           echo "dmg=$dmg" >> "$GITHUB_OUTPUT"
           echo "dir=$(dirname "$dmg")" >> "$GITHUB_OUTPUT"
           shasum -a 256 "$dmg"
@@ -112,4 +116,5 @@ jobs:
             --notes-file "$notes" \
             "${{ steps.artefacts.outputs.dmg }}" \
             "${{ steps.artefacts.outputs.dmg }}.sha256" \
+            "${{ steps.artefacts.outputs.dir }}/appcast.xml" \
             "${{ steps.artefacts.outputs.dir }}/Read Me.txt"

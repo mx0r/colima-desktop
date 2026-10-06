@@ -1,6 +1,7 @@
 import ColimaDomain
 import ColimaFeatures
 import Foundation
+import Observation
 import Synchronization
 
 /// Scriptable colima.
@@ -268,6 +269,19 @@ public final class InMemorySettingsStore: SettingsPersisting {
 
     public func load() -> AppSettings { value.withLock { $0 } }
     public func save(_ settings: AppSettings) { value.withLock { $0 = settings } }
+}
+
+/// Updater stub.
+@MainActor
+@Observable
+public final class FakeUpdater: UpdateControlling {
+    public var automaticallyChecksForUpdates = true
+    public var pendingUpdateVersion: String?
+    public private(set) var checkCount = 0
+
+    public init() {}
+
+    public func checkForUpdates() { checkCount += 1 }
 }
 
 /// Login item stub.

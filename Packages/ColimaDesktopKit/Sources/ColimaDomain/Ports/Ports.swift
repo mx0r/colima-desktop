@@ -131,6 +131,17 @@ public protocol LoginItemControlling: AnyObject {
     func openSystemSettings()
 }
 
+/// Checks for and installs new versions of the app.
+@MainActor
+public protocol UpdateControlling: AnyObject {
+    /// Whether updates are checked in the background on a schedule.
+    var automaticallyChecksForUpdates: Bool { get set }
+    /// Version found by a background check and not yet shown to the user; nil when none.
+    var pendingUpdateVersion: String? { get }
+    /// Starts a user-initiated check, with progress and result shown by the updater.
+    func checkForUpdates()
+}
+
 /// Finds executables on the host.
 public protocol ExecutableLocating: Sendable {
     /// Path of the colima executable: the override when executable, otherwise a search result; nil if not found.

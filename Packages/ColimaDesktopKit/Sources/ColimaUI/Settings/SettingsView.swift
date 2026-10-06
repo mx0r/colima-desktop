@@ -17,6 +17,7 @@ public struct SettingsView: View {
             colimaSection
             socketSection
             generalSection
+            if model.hasUpdater { updatesSection }
             terminalSection
             logsSection
             Section {
@@ -129,6 +130,18 @@ public struct SettingsView: View {
                 Text("Every 30 seconds").tag(30)
                 Text("Every minute").tag(60)
                 Text("Every 5 minutes").tag(300)
+            }
+        }
+    }
+
+    private var updatesSection: some View {
+        Section("Updates") {
+            Toggle("Check for updates automatically", isOn: $model.automaticallyChecksForUpdates)
+            HStack {
+                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Check Now") { model.checkForUpdates() }
             }
         }
     }

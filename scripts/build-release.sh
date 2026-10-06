@@ -14,6 +14,8 @@
 #   MARKETING_VERSION       Override the version in project.yml — CI sets both from the git tag
 #   CURRENT_PROJECT_VERSION and the run number.
 #   SKIP_TESTS=1            Package without running the unit tests. Deliberately loud.
+#   SPARKLE_ED_PRIVATE_KEY  Update signing key (CI secret). Without it the login keychain is used
+#                           (account "colima-desktop"); with neither, no appcast is written.
 #
 set -euo pipefail
 
@@ -113,15 +115,26 @@ ln -s /Applications "$STAGE/Applications"
 # --- sign -------------------------------------------------------------------
 
 # No entitlements: the app is not sandboxed (it runs colima and connects to the Docker socket in
-# the user's home). There is no nested code; SwiftTerm's resource bundle is sealed as a resource.
+# the user's home). Nested code is Sparkle's, signed inside-out as Sparkle documents; SwiftTerm's
+# resource bundle is sealed as a resource.
+SIGN_FLAGS=(--force --sign "$SIGN_IDENTITY")
 if [[ "$SIGN_IDENTITY" == "-" ]]; then
   info "Signing ad hoc (no Developer ID on this machine)"
-  codesign --force --sign - "$STAGE/$APP_NAME.app"
 else
   info "Signing as $SIGN_IDENTITY"
   # Notarisation requires the hardened runtime and a secure timestamp.
-  codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$STAGE/$APP_NAME.app"
+  SIGN_FLAGS+=(--options runtime --timestamp)
 fi
+
+SPARKLE="$STAGE/$APP_NAME.app/Contents/Frameworks/Sparkle.framework"
+if [[ -d "$SPARKLE" ]]; then
+  codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/XPCServices/Installer.xpc"
+  codesign "${SIGN_FLAGS[@]}" --preserve-metadata=entitlements "$SPARKLE/Versions/B/XPCServices/Downloader.xpc"
+  codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/Autoupdate"
+  codesign "${SIGN_FLAGS[@]}" "$SPARKLE/Versions/B/Updater.app"
+  codesign "${SIGN_FLAGS[@]}" "$SPARKLE"
+fi
+codesign "${SIGN_FLAGS[@]}" "$STAGE/$APP_NAME.app"
 
 codesign --verify --strict --verbose=1 "$STAGE/$APP_NAME.app" \
   || fail "signature did not verify"
@@ -188,6 +201,16 @@ hdiutil create \
 
 cp "$STAGE/Read Me.txt" "$OUT/Read Me.txt"
 ( cd "$OUT" && shasum -a 256 "$(basename "$DMG")" > "$(basename "$DMG").sha256" )
+
+# --- appcast ----------------------------------------------------------------
+
+if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]] \
+  || security find-generic-password -s https://sparkle-project.org -a colima-desktop >/dev/null 2>&1; then
+  info "Signing the update and writing appcast.xml"
+  "$REPO/scripts/make-appcast.sh" "$STAGE/$APP_NAME.app" "$DMG"
+else
+  warn "no update signing key (SPARKLE_ED_PRIVATE_KEY or keychain): no appcast.xml"
+fi
 
 if command -v trash >/dev/null 2>&1; then trash "$STAGE"; fi
 

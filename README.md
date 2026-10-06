@@ -36,8 +36,11 @@ socket, so the docker CLI is not needed.
   - **Open localhost:PORT** for each published TCP port,
   - start, stop… and restart…, and delete… once the container is stopped (volumes and the image
     are kept).
-- **Settings**: menu bar icon style, launch at login, notifications, refresh interval, terminal
-  shell, log sizes, and overrides for everything detected automatically.
+- **Updates** through [Sparkle](https://sparkle-project.org): a daily background check (on by
+  default, switchable in Settings), **Check for Updates…** in the menu, and "Update to X…" in the
+  menu once a background check finds one — no window steals focus.
+- **Settings**: menu bar icon style, launch at login, updates, notifications, refresh interval,
+  terminal shell, log sizes, and overrides for everything detected automatically.
 
 ### Menu bar icon styles
 
@@ -142,6 +145,57 @@ instead of publishing a release.
 `.github/workflows/ci.yml` runs the unit tests and a Debug build on every push to `main` and every
 pull request.
 
+### Updates (Sparkle)
+
+The app checks `https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml`
+(`SUFeedURL`). Every release attaches its own `appcast.xml`, and GitHub redirects `latest` to the
+newest release, so publishing a release is all it takes. `scripts/make-appcast.sh` signs the DMG
+with the update signing key and writes the appcast; it then checks the signature against the
+public key inside the app and fails the release on a mismatch. The release workflow refuses to
+publish without an appcast.
+
+Code signing stays ad hoc: Sparkle accepts ad-hoc signed updates as long as the EdDSA signature
+verifies. Releases before 0.6 have no updater — those installs need one manual update.
+
+### Update signing key
+
+An EdDSA key pair. The **public** key is `SPARKLE_PUBLIC_ED_KEY` in `project.yml` and ships in the
+app; it is not a secret. The **private** key signs every release: it lives in your login keychain
+(account `colima-desktop`) and in the `SPARKLE_ED_PRIVATE_KEY` repository secret, and nowhere
+else.
+
+To create one (and to replace one). The tools are Sparkle's own, pinned with the package — run
+`make test` once so they are downloaded:
+
+```sh
+SPARKLE_BIN=Packages/ColimaDesktopKit/.build/artifacts/sparkle/Sparkle/bin
+
+# 1. Replacing a key? Remove the old one first — generate_keys reuses an existing key.
+security delete-generic-password -s https://sparkle-project.org -a colima-desktop
+
+# 2. Create the pair. The private key goes into the login keychain; macOS may ask to allow it.
+"$SPARKLE_BIN/generate_keys" --account colima-desktop
+
+# 3. Print the public key, and set it as SPARKLE_PUBLIC_ED_KEY in project.yml.
+"$SPARKLE_BIN/generate_keys" --account colima-desktop -p
+
+# 4. Hand the private key to GitHub straight from the keychain — no file on disk.
+security find-generic-password -s https://sparkle-project.org -a colima-desktop -w \
+  | gh secret set SPARKLE_ED_PRIVATE_KEY -R mx0r/colima-desktop
+```
+
+Then commit `project.yml`, push, and prove the pair matches without publishing anything — the
+manual run signs a DMG with the secret and verifies it against the app's public key:
+
+```sh
+gh workflow run release.yml -R mx0r/colima-desktop -f version=0.0.0-test
+```
+
+Keep a backup in a password manager (`security find-generic-password -s https://sparkle-project.org -a colima-desktop -w`
+prints it). If the key is lost, installed copies cannot verify any new update and need one manual
+reinstall of a build with the new public key. Rotating a key that installed copies already trust
+needs one transition release signed with the old key that carries the new public key.
+
 ## Site
 
 `site/` is the landing page — one HTML file, one stylesheet, a few images, no scripts and no
@@ -193,9 +247,10 @@ Packages/ColimaDesktopKit/
   Sources/ColimaFeatures/        AppStore, menu model, logs/terminal/settings view models
   Sources/ColimaUI/              status item, menu renderer, icons, windows, SwiftUI views
   Sources/ColimaTerminal/        SwiftTerm bridge
+  Sources/ColimaUpdates/         Sparkle updater
   Sources/ColimaAppShell/        composition root
   Tests/                         one target per layer, plus live integration tests
-scripts/                         build-release.sh, generate-app-icon.sh
+scripts/                         build-release.sh, make-appcast.sh, generate-app-icon.sh
 site/                            landing page
 docs/                            architecture, Docker API, testing; README images
 ```

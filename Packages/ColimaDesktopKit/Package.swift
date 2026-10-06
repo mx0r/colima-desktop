@@ -15,6 +15,8 @@ let package = Package(
     dependencies: [
         // Pinned exactly: 2.0 changes the public API.
         .package(url: "https://github.com/migueldeicaza/SwiftTerm", exact: "1.20.0"),
+        // Pinned exactly: the release workflow signs updates with this version's sign_update.
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
     ],
     targets: [
         // Pure models, reducers and ports. Foundation only.
@@ -44,10 +46,17 @@ let package = Package(
             swiftSettings: mainActorByDefault
         ),
 
+        // Self-update through Sparkle; isolates the dependency.
+        .target(
+            name: "ColimaUpdates",
+            dependencies: ["ColimaDomain", .product(name: "Sparkle", package: "Sparkle")],
+            swiftSettings: mainActorByDefault
+        ),
+
         // Composition root: wires concrete adapters into the features and UI.
         .target(
             name: "ColimaAppShell",
-            dependencies: ["ColimaDomain", "ColimaInfrastructure", "ColimaFeatures", "ColimaUI", "ColimaTerminal"],
+            dependencies: ["ColimaDomain", "ColimaInfrastructure", "ColimaFeatures", "ColimaUI", "ColimaTerminal", "ColimaUpdates"],
             swiftSettings: mainActorByDefault
         ),
 

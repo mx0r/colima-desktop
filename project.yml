@@ -16,6 +16,9 @@ settings:
     # Release builds override both from the git tag and the CI run number.
     MARKETING_VERSION: "0.5"
     CURRENT_PROJECT_VERSION: "1"
+    # Public half of the Sparkle update signing key (README → Update signing key). Updates are
+    # verified against it, so it must match the private key in the SPARKLE_ED_PRIVATE_KEY secret.
+    SPARKLE_PUBLIC_ED_KEY: "Tc4alQPxRwOcggkfRvlRc4sjxy+NoGUFi09RCDgjT+Q="
 
 packages:
   ColimaDesktopKit:
@@ -47,6 +50,10 @@ targets:
         LSMinimumSystemVersion: "26.0"
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "© 2026 Miro Hudak"
+        # Sparkle: each release attaches its appcast.xml; GitHub redirects "latest" to the newest.
+        SUFeedURL: https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
+        SUEnableAutomaticChecks: true
     entitlements:
       path: App/ColimaDesktop.entitlements
     settings:
@@ -56,7 +63,10 @@ targets:
         PRODUCT_NAME: ColimaDesktop
         PRODUCT_MODULE_NAME: ColimaDesktop
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        ENABLE_HARDENED_RUNTIME: YES
+        # Off for local ad-hoc builds: library validation would refuse to load the embedded
+        # Sparkle.framework. build-release.sh adds the hardened runtime when signing with a
+        # Developer ID, which notarisation requires.
+        ENABLE_HARDENED_RUNTIME: NO
         ENABLE_APP_SANDBOX: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         # Ad-hoc signing: there is no Developer ID on the development machine.

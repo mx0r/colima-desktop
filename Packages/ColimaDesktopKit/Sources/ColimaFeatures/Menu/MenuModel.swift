@@ -129,6 +129,8 @@ public enum MenuAction: Hashable, Sendable {
     case container(ContainerAction, containerID: String, name: String)
     case showSettings
     case showAbout
+    /// Shows the updater: a check, or the update found in the background.
+    case checkForUpdates
     case quit
 
     /// Whether the action needs confirmation before it runs.

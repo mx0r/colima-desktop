@@ -13,6 +13,7 @@ Packages/ColimaDesktopKit/
     ColimaFeatures/              AppStore, menu model builder, logs/terminal/settings view models
     ColimaUI/                    NSStatusItem, NSMenu renderer, windows, SwiftUI views
     ColimaTerminal/              SwiftTerm bridge (isolates the dependency)
+    ColimaUpdates/               Sparkle updater (isolates the dependency)
     ColimaAppShell/              composition root: live dependencies, action router, app delegate
     ColimaTestSupport/           fakes and ManualClock for tests
   Tests/                         one test target per layer, plus live integration tests
@@ -23,6 +24,7 @@ Packages/ColimaDesktopKit/
 ```
 ColimaAppShell ──► ColimaUI ──► ColimaFeatures ──► ColimaDomain
        │         ColimaTerminal ─┘                     ▲
+       ├──────► ColimaUpdates ─────────────────────────┤
        └──────► ColimaInfrastructure ──────────────────┘
 ```
 
