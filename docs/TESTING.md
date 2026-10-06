@@ -55,9 +55,12 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] Settings: a wrong colima path shows a warning and the menu shows "Colima not found". Clearing the field
       restores auto-detection.
 - [ ] Launch at login: with the app in `/Applications`, enable it, log out and log in.
+- [ ] Updates need a Release build (a published DMG or `make release`); Debug builds show no
+      "Check for Updates…" and no Updates section in Settings.
 - [ ] Check for Updates… (menu and app menu) opens Sparkle's window: "up to date" on the newest
       release; an older installed release offers the newest, installs it and relaunches.
 - [ ] With an older release installed and automatic checks on, the menu shows "Update to X…"
-      after the background check, and no window opens by itself.
+      after the background check — also right after launch at login — and no window opens by
+      itself.
 - [ ] Settings → Updates: the switch survives a relaunch.
 - [ ] Quit closes the app and its windows.

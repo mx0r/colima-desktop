@@ -87,7 +87,7 @@ make test         # unit tests (no colima needed)
 make test-live    # plus integration tests against the local colima (default profile running)
 make icon         # redraw the app icon from ColimaLlama.swift
 make docs-images  # re-render the README and site images from the real drawing code
-make release      # test, build Release, sign and package a DMG
+make release      # test, build Release, sign and package a DMG (+ appcast with the signing key)
 ```
 
 The first Xcode build asks to trust SwiftTerm's build plugin. Command line builds pass
@@ -119,7 +119,12 @@ make release      # or ./scripts/build-release.sh
 
 Runs the unit tests, generates the project, builds Release (universal: arm64 and x86_64), signs,
 and packages a DMG into `builds/<date>-<version>/` alongside a readme for whoever installs it and
-a SHA-256 checksum. `SKIP_TESTS=1` packages without testing, and says so.
+a SHA-256 checksum. With the update signing key in your keychain it also writes `appcast.xml`.
+`SKIP_TESTS=1` packages without testing, and says so.
+
+The build number is the commit count of `HEAD` (override with `CURRENT_PROJECT_VERSION`), so a
+local build and the CI build of the same commit agree, and Sparkle sees every later release as
+newer.
 
 Signing defaults to ad hoc. With a Developer ID,
 `SIGN_IDENTITY="Developer ID Application: …" ./scripts/build-release.sh` signs with the hardened
@@ -133,14 +138,24 @@ Pushing a tag builds and publishes the DMG:
 git tag v0.6 && git push origin v0.6
 ```
 
-`.github/workflows/release.yml` runs the same `scripts/build-release.sh` on a macOS runner and
-attaches the DMG, its checksum and the readme to a GitHub release. The version comes from the
-tag and the build number from the run number; both reach the app because `Info.plist` resolves
-`CFBundleShortVersionString` and `CFBundleVersion` from build settings. No secrets are involved,
-because signing is ad hoc.
+`.github/workflows/release.yml` has two jobs:
 
-The workflow has a manual trigger (`workflow_dispatch`) that leaves the DMG as a build artefact
-instead of publishing a release.
+- **build** runs the same `scripts/build-release.sh` on a macOS runner: tests, Release build, ad-hoc
+  code signing, DMG. It runs third-party code (package builds, SwiftTerm's build plugin, the test
+  binaries), so it never gets a secret.
+- **publish** signs the update and publishes. It runs in the `release` environment, which admits
+  only `v*` tags and holds the `SPARKLE_ED_PRIVATE_KEY` secret. It runs nothing from the package
+  build: this repository's scripts and Sparkle's release tools, downloaded at a pinned checksum.
+  `scripts/make-appcast.sh` signs the DMG, writes `appcast.xml` and checks the signature against
+  the public key inside the app before anything is published. The release then carries the DMG,
+  its checksum, the appcast and the readme.
+
+The version comes from the tag and the build number from the commit count; both reach the app
+because `Info.plist` resolves `CFBundleShortVersionString` and `CFBundleVersion` from build
+settings.
+
+The manual trigger (`workflow_dispatch`) only builds when run from a branch. Run on a tag
+(`--ref vX.Y`) it also signs, which proves the key, but it never publishes.
 
 `.github/workflows/ci.yml` runs the unit tests and a Debug build on every push to `main` and every
 pull request.
@@ -157,12 +172,16 @@ publish without an appcast.
 Code signing stays ad hoc: Sparkle accepts ad-hoc signed updates as long as the EdDSA signature
 verifies. Releases before 0.6 have no updater — those installs need one manual update.
 
+Only Release builds update themselves (`COLIMA_DESKTOP_UPDATES` in `project.yml`). Debug builds
+(`make run`, `make install`) have no updater and no "Check for Updates…": they share the bundle ID
+and Sparkle's settings with the published app, and would be offered it as an update.
+
 ### Update signing key
 
 An EdDSA key pair. The **public** key is `SPARKLE_PUBLIC_ED_KEY` in `project.yml` and ships in the
 app; it is not a secret. The **private** key signs every release: it lives in your login keychain
-(account `colima-desktop`) and in the `SPARKLE_ED_PRIVATE_KEY` repository secret, and nowhere
-else.
+(account `colima-desktop`) and in the `SPARKLE_ED_PRIVATE_KEY` secret of the `release` environment,
+and nowhere else.
 
 To create one (and to replace one). The tools are Sparkle's own, pinned with the package — run
 `make test` once so they are downloaded:
@@ -179,16 +198,18 @@ security delete-generic-password -s https://sparkle-project.org -a colima-deskto
 # 3. Print the public key, and set it as SPARKLE_PUBLIC_ED_KEY in project.yml.
 "$SPARKLE_BIN/generate_keys" --account colima-desktop -p
 
-# 4. Hand the private key to GitHub straight from the keychain — no file on disk.
+# 4. Hand the private key to the release environment straight from the keychain — no file on disk.
 security find-generic-password -s https://sparkle-project.org -a colima-desktop -w \
-  | gh secret set SPARKLE_ED_PRIVATE_KEY -R mx0r/colima-desktop
+  | gh secret set SPARKLE_ED_PRIVATE_KEY --env release -R mx0r/colima-desktop
 ```
 
-Then commit `project.yml`, push, and prove the pair matches without publishing anything — the
-manual run signs a DMG with the secret and verifies it against the app's public key:
+Then commit `project.yml`, push, and prove the pair matches without publishing anything. Locally,
+`make release` signs with the keychain key and checks it against the app's public key. For the
+secret, run the workflow on an existing tag that has the two-job workflow; it signs and checks,
+and never publishes from a manual run:
 
 ```sh
-gh workflow run release.yml -R mx0r/colima-desktop -f version=0.0.0-test
+gh workflow run release.yml -R mx0r/colima-desktop --ref vX.Y -f version=0.0.0-test
 ```
 
 Keep a backup in a password manager (`security find-generic-password -s https://sparkle-project.org -a colima-desktop -w`
@@ -253,6 +274,7 @@ Packages/ColimaDesktopKit/
 scripts/                         build-release.sh, make-appcast.sh, generate-app-icon.sh
 site/                            landing page
 docs/                            architecture, Docker API, testing; README images
+AGENTS.md                        guide for coding agents (CLAUDE.md imports it)
 ```
 
 ## License

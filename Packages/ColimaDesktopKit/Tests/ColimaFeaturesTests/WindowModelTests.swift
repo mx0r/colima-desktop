@@ -268,6 +268,24 @@ struct SettingsViewModelTests {
         #expect(sut.draft.dockerSocketOverrides.isEmpty)
     }
 
+    @Test("The login item hint shows only outside an Applications folder", arguments: [
+        ("/Applications/ColimaDesktop.app", false),
+        ("/Users/test/Applications/ColimaDesktop.app", false),
+        ("/Users/test/Work/colima-desktop/.build/Build/Products/Debug/ColimaDesktop.app", true),
+        ("/Applications Old/ColimaDesktop.app", true),
+    ])
+    func applicationsHint(path: String, showsHint: Bool) async {
+        let harness = await StoreHarness().started()
+        let sut = SettingsViewModel(
+            store: harness.store,
+            loginItem: FakeLoginItem(),
+            appURL: URL(filePath: path),
+            applicationDirectories: [URL(filePath: "/Applications"), URL(filePath: "/Users/test/Applications")],
+            clock: ManualClock()
+        )
+        #expect(sut.isOutsideApplicationsFolder == showsHint)
+    }
+
     @Test("Launch at login toggles and reports errors")
     func loginItem() async {
         struct Denied: LocalizedError { var errorDescription: String? { "Operation not permitted" } }

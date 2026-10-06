@@ -1,12 +1,12 @@
 name: Release
 
-# Tag a commit and the DMG builds itself:
+# Tag a commit and the DMG builds, gets signed for Sparkle and is published:
 #
-#     git tag v0.6 && git push origin v0.6
+#     git tag v0.7 && git push origin v0.7
 #
-# The version comes from the tag, so project.yml does not need bumping (bump it anyway, so local
-# builds stop calling themselves the old version). Use the manual trigger to prove the workflow
-# works without minting a real release.
+# The version comes from the tag (bump project.yml anyway, so local builds stop calling themselves
+# the old version); the build number is the commit count. A manual run from a branch only builds;
+# a manual run on a tag (`--ref vX.Y`) also signs, which proves the key, but never publishes.
 on:
   push:
     tags:
@@ -19,15 +19,21 @@ on:
         default: "0.0.0-test"
 
 permissions:
-  # Needed to create the release and attach the DMG to it.
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  # Tests, builds and packages. This job runs third-party code — package builds, SwiftTerm's build
+  # plugin, the test binaries — so it never sees the update signing key.
+  build:
     runs-on: macos-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The build number is the commit count, which needs the full history.
+          fetch-depth: 0
 
       - name: Report the toolchain
         run: |
@@ -65,13 +71,10 @@ jobs:
           echo "Building $version"
 
       - name: Test, build and package
-        # The script runs the unit tests before packaging. Code signing is ad hoc, which needs no
-        # secrets. The update signing key is a secret: it signs the DMG for Sparkle and the
-        # script checks that signature against the public key inside the app.
+        # Code signing is ad hoc, which needs no secrets. No appcast here: signing happens in the
+        # publish job.
         env:
           MARKETING_VERSION: ${{ steps.version.outputs.version }}
-          CURRENT_PROJECT_VERSION: ${{ github.run_number }}
-          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: ./scripts/build-release.sh
 
       - name: Locate the artefacts
@@ -79,9 +82,6 @@ jobs:
         run: |
           dmg=$(find builds -name "*.dmg" -print -quit)
           [ -n "$dmg" ] || { echo "::error::no DMG was produced"; exit 1; }
-          # Installed copies find updates through this file; a release without it is invisible to them.
-          [ -f "$(dirname "$dmg")/appcast.xml" ] || { echo "::error::no appcast.xml — is the SPARKLE_ED_PRIVATE_KEY secret set?"; exit 1; }
-          echo "dmg=$dmg" >> "$GITHUB_OUTPUT"
           echo "dir=$(dirname "$dmg")" >> "$GITHUB_OUTPUT"
           shasum -a 256 "$dmg"
 
@@ -90,15 +90,57 @@ jobs:
           name: ColimaDesktop-${{ steps.version.outputs.version }}
           path: ${{ steps.artefacts.outputs.dir }}
 
+  # Signs the update and publishes. It holds the key, so it runs nothing from the package build:
+  # only this repository's scripts and Sparkle's release tools, verified by checksum. The
+  # `release` environment admits only v* tags.
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    environment: release
+    permissions:
+      # Needed to create the release and attach the files to it.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ColimaDesktop-${{ needs.build.outputs.version }}
+          path: release
+
+      - name: Fetch Sparkle's tools
+        # The same version as Package.swift pins, from Sparkle's release, at the digest GitHub lists.
+        run: |
+          archive="$RUNNER_TEMP/Sparkle-2.10.0.tar.xz"
+          curl -fsSL -o "$archive" https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-2.10.0.tar.xz
+          echo "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c  $archive" | shasum -a 256 -c
+          mkdir "$RUNNER_TEMP/sparkle"
+          tar -xf "$archive" -C "$RUNNER_TEMP/sparkle"
+          echo "SPARKLE_BIN=$RUNNER_TEMP/sparkle/bin" >> "$GITHUB_ENV"
+
+      - name: Sign the update and write the appcast
+        # The only step that gets the key. make-appcast.sh checks the signature against the public
+        # key inside the app, so a mismatched key fails here, before anything is published.
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          [ -n "$SPARKLE_ED_PRIVATE_KEY" ] || { echo "::error::SPARKLE_ED_PRIVATE_KEY is not set for the release environment"; exit 1; }
+          dmg=$(find release -name "*.dmg" -print -quit)
+          ./scripts/make-appcast.sh "$dmg"
+
       - name: Publish the release
-        # Only for a real tag. A manual run leaves the DMG as an artefact instead.
-        if: startsWith(github.ref, 'refs/tags/')
+        # Only for a pushed tag; a manual run on a tag stops after signing.
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
+          dmg=$(find release -name "*.dmg" -print -quit)
           notes=$(mktemp)
           {
-            echo "Colima Desktop ${{ steps.version.outputs.version }}"
+            echo "Colima Desktop $VERSION"
             echo
             echo "A menu bar app for [Colima](https://github.com/abiosoft/colima). Requires macOS 26 and Colima."
             echo
@@ -107,14 +149,14 @@ jobs:
             echo "in Applications and choose Open, then confirm. Once only."
             echo
             echo '```'
-            cat "${{ steps.artefacts.outputs.dmg }}.sha256"
+            cat "$dmg.sha256"
             echo '```'
           } > "$notes"
 
           gh release create "$GITHUB_REF_NAME" \
-            --title "Colima Desktop ${{ steps.version.outputs.version }}" \
+            --title "Colima Desktop $VERSION" \
             --notes-file "$notes" \
-            "${{ steps.artefacts.outputs.dmg }}" \
-            "${{ steps.artefacts.outputs.dmg }}.sha256" \
-            "${{ steps.artefacts.outputs.dir }}/appcast.xml" \
-            "${{ steps.artefacts.outputs.dir }}/Read Me.txt"
+            "$dmg" \
+            "$dmg.sha256" \
+            release/appcast.xml \
+            "release/Read Me.txt"

@@ -5,8 +5,8 @@ import Foundation
 public enum MenuModelBuilder {
     /// Builds the top-level menu items.
     ///
-    /// - Parameter pendingUpdate: Version found by a background update check, if any.
-    public static func build(_ snapshot: AppSnapshot, pendingUpdate: String? = nil, now: Date = Date()) -> [MenuNode] {
+    /// - Parameter updates: The update entry; `.hidden` for builds without an updater.
+    public static func build(_ snapshot: AppSnapshot, updates: UpdatesMenuItem = .hidden, now: Date = Date()) -> [MenuNode] {
         var nodes: [MenuNode] = [statusNode(snapshot)]
         nodes.append(informationNode(snapshot))
         nodes.append(profileNode(snapshot))
@@ -17,18 +17,22 @@ public enum MenuModelBuilder {
         nodes.append(.separator("sep.app"))
         nodes.append(MenuNode(id: "settings", title: "Settings…", action: .showSettings, keyEquivalent: ","))
         nodes.append(MenuNode(id: "about", title: "About Colima Desktop", action: .showAbout))
-        nodes.append(updateNode(pendingUpdate))
+        if let node = updateNode(updates) { nodes.append(node) }
         nodes.append(.separator("sep.quit"))
         nodes.append(MenuNode(id: "quit", title: "Quit Colima Desktop", action: .quit, keyEquivalent: "q"))
         return nodes
     }
 
-    /// "Check for Updates…", or "Update to X…" once a background check found one.
-    static func updateNode(_ pendingUpdate: String?) -> MenuNode {
-        guard let pendingUpdate else {
-            return MenuNode(id: "updates", title: "Check for Updates…", action: .checkForUpdates)
+    /// "Check for Updates…", "Update to X…" once a background check found one, or nothing.
+    static func updateNode(_ item: UpdatesMenuItem) -> MenuNode? {
+        switch item {
+        case .hidden:
+            nil
+        case .check:
+            MenuNode(id: "updates", title: "Check for Updates…", action: .checkForUpdates)
+        case .pending(let version):
+            MenuNode(id: "updates", title: "Update to \(version)…", image: .symbol("arrow.down.circle.fill"), action: .checkForUpdates)
         }
-        return MenuNode(id: "updates", title: "Update to \(pendingUpdate)…", image: .symbol("arrow.down.circle.fill"), action: .checkForUpdates)
     }
 
     // MARK: Status

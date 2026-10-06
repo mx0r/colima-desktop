@@ -105,7 +105,7 @@ public struct SettingsView: View {
                 get: { model.loginItemStatus == .enabled || model.loginItemStatus == .requiresApproval },
                 set: { model.setLaunchAtLogin($0) }
             ))
-            if !Bundle.main.bundlePath.hasPrefix("/Applications/") {
+            if model.isOutsideApplicationsFolder {
                 Text("macOS registers this copy of the app. Turn this on from the copy in Applications, so the login item keeps working after updates.")
                     .font(.callout)
                     .foregroundStyle(.secondary)

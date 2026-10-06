@@ -93,6 +93,26 @@ public struct MenuNode: Identifiable, Hashable, Sendable {
     }
 }
 
+/// The update entry of the menu.
+public enum UpdatesMenuItem: Hashable, Sendable {
+    /// No updater in this build (Debug builds).
+    case hidden
+    /// "Check for Updates…".
+    case check
+    /// "Update to X…" for a version found by a background check.
+    case pending(String)
+
+    /// The entry for an updater's current state.
+    @MainActor
+    public init(updater: (any UpdateControlling)?) {
+        guard let updater else {
+            self = .hidden
+            return
+        }
+        self = updater.pendingUpdateVersion.map(UpdatesMenuItem.pending) ?? .check
+    }
+}
+
 /// Well-known node IDs.
 public enum MenuNodeID {
     /// The information submenu; the UI reports when it opens and closes.

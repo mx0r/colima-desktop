@@ -29,7 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
         let store = AppStore(dependencies: LiveEnvironment.dependencies())
-        let updater = SparkleUpdater()
+        // Debug builds do not update themselves: they would be offered the published release.
+        let updater = SparkleUpdater.isEnabledForMainBundle ? SparkleUpdater() : nil
         let router = ActionRouter(store: store, windows: windows, loginItem: SMAppServiceLoginItem(), updater: updater)
         statusItem = StatusItemController(store: store, updater: updater) { [weak router] action in
             router?.handle(action)
@@ -61,7 +62,9 @@ enum MainMenu {
 
         let appMenu = NSMenu()
         appMenu.addItem(item("About Colima Desktop", #selector(MenuTarget.showAbout), target: MenuTarget.shared))
-        appMenu.addItem(item("Check for Updates…", #selector(MenuTarget.checkForUpdates), target: MenuTarget.shared))
+        if SparkleUpdater.isEnabledForMainBundle {
+            appMenu.addItem(item("Check for Updates…", #selector(MenuTarget.checkForUpdates), target: MenuTarget.shared))
+        }
         appMenu.addItem(.separator())
         appMenu.addItem(item("Settings…", #selector(MenuTarget.showSettings), key: ",", target: MenuTarget.shared))
         appMenu.addItem(.separator())

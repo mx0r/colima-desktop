@@ -11,11 +11,14 @@
 #   SIGN_IDENTITY           Signing identity. Defaults to "-" (ad hoc), which is all the
 #                           development machine has. Set a "Developer ID Application: …" identity
 #                           and the script signs with the hardened runtime and prints how to notarise.
-#   MARKETING_VERSION       Override the version in project.yml — CI sets both from the git tag
-#   CURRENT_PROJECT_VERSION and the run number.
+#   MARKETING_VERSION       Override the version in project.yml (CI sets it from the git tag).
+#   CURRENT_PROJECT_VERSION Override the build number. Defaults to the commit count of HEAD, so a
+#                           local build and the CI build of the same commit agree, and Sparkle sees
+#                           every later release as newer. Needs full history (not a shallow clone).
 #   SKIP_TESTS=1            Package without running the unit tests. Deliberately loud.
-#   SPARKLE_ED_PRIVATE_KEY  Update signing key (CI secret). Without it the login keychain is used
-#                           (account "colima-desktop"); with neither, no appcast is written.
+#   SPARKLE_ED_PRIVATE_KEY  Update signing key. Locally the login keychain is used instead (account
+#                           "colima-desktop"); with neither, no appcast is written. CI never passes
+#                           it here: the release workflow signs in a separate job.
 #
 set -euo pipefail
 
@@ -28,16 +31,21 @@ SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 DERIVED="$REPO/.build/derived"
 STAGE="$REPO/.build/stage"
 
-# Version overrides, if any. Built as an array so an unset one passes nothing; the `[@]+` guard
-# is for bash 3.2, which macOS ships and which errors on expanding an empty array under `set -u`.
-VERSION_SETTINGS=()
-[[ -n "${MARKETING_VERSION:-}" ]] && VERSION_SETTINGS+=("MARKETING_VERSION=$MARKETING_VERSION")
-[[ -n "${CURRENT_PROJECT_VERSION:-}" ]] \
-  && VERSION_SETTINGS+=("CURRENT_PROJECT_VERSION=$CURRENT_PROJECT_VERSION")
-
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn()  { printf '\033[1;33mWarning:\033[0m %s\n' "$*" >&2; }
 fail()  { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# Build number: the commit count, unless overridden. A shallow clone would count 1.
+if [[ -z "${CURRENT_PROJECT_VERSION:-}" ]]; then
+  [[ "$(git rev-parse --is-shallow-repository)" == "false" ]] \
+    || fail "shallow clone: the build number needs full history (actions/checkout fetch-depth: 0)"
+  CURRENT_PROJECT_VERSION=$(git rev-list --count HEAD)
+fi
+
+# Version overrides. Built as an array so an unset one passes nothing; the `[@]+` guard is for
+# bash 3.2, which macOS ships and which errors on expanding an empty array under `set -u`.
+VERSION_SETTINGS=("CURRENT_PROJECT_VERSION=$CURRENT_PROJECT_VERSION")
+[[ -n "${MARKETING_VERSION:-}" ]] && VERSION_SETTINGS+=("MARKETING_VERSION=$MARKETING_VERSION")
 
 command -v xcodegen >/dev/null 2>&1 || fail "xcodegen not found — brew install xcodegen"
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild not found — install Xcode"
@@ -78,11 +86,13 @@ APP="$DERIVED/Build/Products/$CONFIG/$SCHEME.app"
 [[ -d "$APP" ]] || fail "no app at $APP"
 APP_NAME=$(basename "$APP" .app)
 
-VERSION=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)
-BUILD=$(defaults read "$APP/Contents/Info" CFBundleVersion)
-BUNDLE_ID=$(defaults read "$APP/Contents/Info" CFBundleIdentifier)
+# plutil reads the file itself; `defaults read` can answer from a cache for a rewritten path.
+read_info() { plutil -extract "$1" raw -o - "$APP/Contents/Info.plist"; }
+VERSION=$(read_info CFBundleShortVersionString)
+BUILD=$(read_info CFBundleVersion)
+BUNDLE_ID=$(read_info CFBundleIdentifier)
 # The bundle on disk is ColimaDesktop.app; everything a user reads says "Colima Desktop".
-DISPLAY_NAME=$(defaults read "$APP/Contents/Info" CFBundleName)
+DISPLAY_NAME=$(read_info CFBundleName)
 ARCHS=$(lipo -archs "$APP/Contents/MacOS/$APP_NAME")
 DATE=$(date +%Y-%m-%d)
 OUT="$REPO/builds/$DATE-$VERSION"
@@ -136,7 +146,8 @@ if [[ -d "$SPARKLE" ]]; then
 fi
 codesign "${SIGN_FLAGS[@]}" "$STAGE/$APP_NAME.app"
 
-codesign --verify --strict --verbose=1 "$STAGE/$APP_NAME.app" \
+# --deep: the nested Sparkle helpers were re-signed above and must verify too.
+codesign --verify --deep --strict --verbose=1 "$STAGE/$APP_NAME.app" \
   || fail "signature did not verify"
 
 # --- readme for whoever installs it -----------------------------------------
@@ -207,7 +218,7 @@ cp "$STAGE/Read Me.txt" "$OUT/Read Me.txt"
 if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]] \
   || security find-generic-password -s https://sparkle-project.org -a colima-desktop >/dev/null 2>&1; then
   info "Signing the update and writing appcast.xml"
-  "$REPO/scripts/make-appcast.sh" "$STAGE/$APP_NAME.app" "$DMG"
+  "$REPO/scripts/make-appcast.sh" "$DMG"
 else
   warn "no update signing key (SPARKLE_ED_PRIVATE_KEY or keychain): no appcast.xml"
 fi

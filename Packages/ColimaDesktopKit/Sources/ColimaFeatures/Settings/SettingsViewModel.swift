@@ -22,6 +22,8 @@ public final class SettingsViewModel {
     @ObservationIgnored private let store: AppStore
     @ObservationIgnored private let loginItem: any LoginItemControlling
     @ObservationIgnored private let updater: (any UpdateControlling)?
+    @ObservationIgnored private let appURL: URL
+    @ObservationIgnored private let applicationDirectories: [URL]
     @ObservationIgnored private let clock: any Clock<Duration>
     @ObservationIgnored private var applyTask: Task<Void, Never>?
 
@@ -29,15 +31,23 @@ public final class SettingsViewModel {
     static let applyDelay = Duration.milliseconds(700)
 
     /// Creates a view model for the store's current settings.
+    ///
+    /// - Parameters:
+    ///   - appURL: Location of the running app (tests inject one).
+    ///   - applicationDirectories: The Applications folders, `/Applications` and `~/Applications`.
     public init(
         store: AppStore,
         loginItem: any LoginItemControlling,
         updater: (any UpdateControlling)? = nil,
+        appURL: URL = Bundle.main.bundleURL,
+        applicationDirectories: [URL] = FileManager.default.urls(for: .applicationDirectory, in: [.localDomainMask, .userDomainMask]),
         clock: any Clock<Duration> = ContinuousClock()
     ) {
         self.store = store
         self.loginItem = loginItem
         self.updater = updater
+        self.appURL = appURL
+        self.applicationDirectories = applicationDirectories
         self.clock = clock
         draft = store.settings
         loginItemStatus = loginItem.status
@@ -120,6 +130,17 @@ public final class SettingsViewModel {
     /// Re-reads the login item state (e.g. after returning from System Settings).
     public func refreshLoginItemStatus() {
         loginItemStatus = loginItem.status
+    }
+
+    /// Whether this copy runs from outside `/Applications` and `~/Applications`. macOS registers
+    /// the login item for this copy's path, so the user should turn it on from an installed copy.
+    public var isOutsideApplicationsFolder: Bool {
+        let appPath = appURL.standardizedFileURL.path(percentEncoded: false)
+        return !applicationDirectories.contains { directory in
+            var folder = directory.standardizedFileURL.path(percentEncoded: false)
+            if !folder.hasSuffix("/") { folder += "/" }
+            return appPath.hasPrefix(folder)
+        }
     }
 
     /// Whether the app can update itself (false in builds without an updater).

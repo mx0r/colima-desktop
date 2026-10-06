@@ -71,6 +71,7 @@ let package = Package(
         ),
         .testTarget(name: "ColimaFeaturesTests", dependencies: ["ColimaFeatures", "ColimaDomain", "ColimaTestSupport"]),
         .testTarget(name: "ColimaUITests", dependencies: ["ColimaUI", "ColimaFeatures", "ColimaDomain"]),
+        .testTarget(name: "ColimaUpdatesTests", dependencies: ["ColimaUpdates"]),
         // Runs against the local colima and Docker; enabled with COLIMA_DESKTOP_IT=1.
         .testTarget(
             name: "ColimaIntegrationTests",

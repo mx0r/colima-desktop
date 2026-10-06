@@ -14,7 +14,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private var observationTask: Task<Void, Never>?
     private var animationTask: Task<Void, Never>?
     private var lastSnapshot: AppSnapshot?
-    private var lastPendingUpdate: String?
+    private var lastUpdates: UpdatesMenuItem?
     private var iconKey: IconKey?
     private var appearanceObservation: NSKeyValueObservation?
 
@@ -59,11 +59,11 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle) {
         updateIcon(snapshot: snapshot, style: style)
-        let pendingUpdate = updater?.pendingUpdateVersion
-        guard snapshot != lastSnapshot || pendingUpdate != lastPendingUpdate else { return }
+        let updates = UpdatesMenuItem(updater: updater)
+        guard snapshot != lastSnapshot || updates != lastUpdates else { return }
         lastSnapshot = snapshot
-        lastPendingUpdate = pendingUpdate
-        renderer.render(MenuModelBuilder.build(snapshot, pendingUpdate: pendingUpdate), into: menu)
+        lastUpdates = updates
+        renderer.render(MenuModelBuilder.build(snapshot, updates: updates), into: menu)
     }
 
     private func updateIcon(snapshot: AppSnapshot? = nil, style: MenuBarIconStyle? = nil) {

@@ -34,8 +34,11 @@ public final class UserDefaultsSettingsStore: SettingsPersisting, @unchecked Sen
 /// The parts of `SMAppService` the login item uses; a seam for tests.
 @MainActor
 public protocol AppServiceControlling: AnyObject {
+    /// Registration state; each read asks the system's login item service.
     var status: SMAppService.Status { get }
+    /// Registers the service; throws when it is already registered or macOS refuses.
     func register() throws
+    /// Unregisters the service; throws when it is not registered.
     func unregister() throws
 }
 
@@ -70,10 +73,12 @@ public final class SMAppServiceLoginItem: LoginItemControlling {
     }
 
     public func setEnabled(_ enabled: Bool) throws {
+        // One read: each one queries the system, and two could disagree.
+        let status = service.status
         if enabled {
             // Registering what is already enabled throws.
-            if service.status != .enabled { try service.register() }
-        } else if service.status == .enabled || service.status == .requiresApproval {
+            if status != .enabled { try service.register() }
+        } else if status == .enabled || status == .requiresApproval {
             try service.unregister()
         }
     }

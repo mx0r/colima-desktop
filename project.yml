@@ -54,6 +54,9 @@ targets:
         SUFeedURL: https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml
         SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
         SUEnableAutomaticChecks: true
+        # Read by SparkleUpdater: Debug builds do not update themselves (they would be offered the
+        # published release, which shares their bundle ID and Sparkle settings).
+        ColimaDesktopUpdates: $(COLIMA_DESKTOP_UPDATES)
     entitlements:
       path: App/ColimaDesktop.entitlements
     settings:
@@ -74,6 +77,11 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEAD_CODE_STRIPPING: YES
+      configs:
+        Debug:
+          COLIMA_DESKTOP_UPDATES: "NO"
+        Release:
+          COLIMA_DESKTOP_UPDATES: "YES"
 
 schemes:
   ColimaDesktop:

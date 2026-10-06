@@ -37,7 +37,7 @@ struct MenuModelBuilderTests {
 
     @Test("Top-level order follows the spec: status, info, VM actions, containers, app items, quit")
     func topLevelOrder() {
-        let ids = MenuModelBuilder.build(snapshot(), now: now).map(\.id)
+        let ids = MenuModelBuilder.build(snapshot(), updates: .check, now: now).map(\.id)
         #expect(ids == [
             "status", MenuNodeID.information, "profiles", "sep.vm",
             "vm.start", "vm.stop", "vm.restart", "sep.containers",
@@ -45,16 +45,28 @@ struct MenuModelBuilderTests {
         ])
     }
 
-    @Test("Check for Updates, or the pending update found in the background")
+    @Test("Check for Updates, the pending update found in the background, or nothing without an updater")
     func updates() throws {
-        let idle = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), now: now)))
+        #expect(node("updates", in: MenuModelBuilder.build(snapshot(), now: now)) == nil)
+
+        let idle = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), updates: .check, now: now)))
         #expect(idle.title == "Check for Updates…")
         #expect(idle.action == .checkForUpdates)
 
-        let pending = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), pendingUpdate: "0.6", now: now)))
+        let pending = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), updates: .pending("0.6"), now: now)))
         #expect(pending.title == "Update to 0.6…")
         #expect(pending.action == .checkForUpdates)
         #expect(pending.image == .symbol("arrow.down.circle.fill"))
+    }
+
+    @MainActor
+    @Test("The menu item follows the updater")
+    func updatesItemFromUpdater() {
+        let updater = FakeUpdater()
+        #expect(UpdatesMenuItem(updater: nil) == .hidden)
+        #expect(UpdatesMenuItem(updater: updater) == .check)
+        updater.pendingUpdateVersion = "0.7"
+        #expect(UpdatesMenuItem(updater: updater) == .pending("0.7"))
     }
 
     @Test("Running VM: stop and restart enabled, start disabled")
