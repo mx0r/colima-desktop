@@ -31,27 +31,50 @@ public final class UserDefaultsSettingsStore: SettingsPersisting, @unchecked Sen
     }
 }
 
+/// The parts of `SMAppService` the login item uses; a seam for tests.
+@MainActor
+public protocol AppServiceControlling: AnyObject {
+    var status: SMAppService.Status { get }
+    func register() throws
+    func unregister() throws
+}
+
+extension SMAppService: AppServiceControlling {}
+
 /// Launch at login through `SMAppService.mainApp` (macOS 13+).
 @MainActor
 public final class SMAppServiceLoginItem: LoginItemControlling {
-    /// Creates the controller.
-    public init() {}
+    private let service: any AppServiceControlling
 
-    public var status: LoginItemStatus {
-        switch SMAppService.mainApp.status {
+    /// Creates the controller for the app itself.
+    public convenience init() {
+        self.init(service: SMAppService.mainApp)
+    }
+
+    /// Creates the controller for any service (tests).
+    public init(service: any AppServiceControlling) {
+        self.service = service
+    }
+
+    public var status: LoginItemStatus { Self.map(service.status) }
+
+    /// Maps the framework status. `.notFound` is what a never-registered app reports
+    /// (measured with an ad-hoc signed bundle), so it means "off", not "unsupported".
+    static func map(_ status: SMAppService.Status) -> LoginItemStatus {
+        switch status {
         case .enabled: .enabled
-        case .notRegistered: .disabled
         case .requiresApproval: .requiresApproval
-        case .notFound: .unavailable
-        @unknown default: .unavailable
+        case .notRegistered, .notFound: .disabled
+        @unknown default: .disabled
         }
     }
 
     public func setEnabled(_ enabled: Bool) throws {
         if enabled {
-            try SMAppService.mainApp.register()
-        } else {
-            try SMAppService.mainApp.unregister()
+            // Registering what is already enabled throws.
+            if service.status != .enabled { try service.register() }
+        } else if service.status == .enabled || service.status == .requiresApproval {
+            try service.unregister()
         }
     }
 

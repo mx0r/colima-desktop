@@ -118,8 +118,6 @@ public enum LoginItemStatus: Hashable, Sendable {
     case disabled
     /// Registered, but the user must allow it in System Settings.
     case requiresApproval
-    /// Not supported for this build (e.g. not properly signed).
-    case unavailable
 }
 
 /// Registers the app as a login item.
