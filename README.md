@@ -200,6 +200,7 @@ site/                            landing page
 docs/                            architecture, Docker API, testing; README images
 ```
 
-## Third-party notices
+## License
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The released DMG includes the same file.
+[MIT](LICENSE). Third-party notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the
+released DMG includes both.

@@ -166,12 +166,13 @@ LAUNCH AT LOGIN
   Turn it on from the copy in /Applications. macOS registers the app's path,
   so a copy elsewhere stops opening once it moves.
 
-THIRD-PARTY NOTICES
-  See "Third-Party Notices.txt".
+LICENSE
+  MIT — see "License.txt". Third-party notices: "Third-Party Notices.txt".
 
 With help from Claude.
 EOF
 
+cp "$REPO/LICENSE" "$STAGE/License.txt"
 cp "$REPO/THIRD_PARTY_NOTICES.md" "$STAGE/Third-Party Notices.txt"
 
 # --- dmg --------------------------------------------------------------------
