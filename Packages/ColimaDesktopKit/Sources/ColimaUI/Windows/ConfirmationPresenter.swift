@@ -43,7 +43,9 @@ public enum ConfirmationPresenter {
     }
 
     /// Shows a modal confirmation. Call synchronously from a menu action, never from inside a Task.
-    public static func confirm(_ action: MenuAction, profile: ProfileName) -> Bool {
+    ///
+    /// - Parameter appearance: The interface appearance setting.
+    public static func confirm(_ action: MenuAction, profile: ProfileName, appearance: AppearanceMode = .system) -> Bool {
         guard let dialog = dialog(for: action, profile: profile) else { return true }
         let alert = NSAlert()
         alert.alertStyle = .warning
@@ -52,6 +54,7 @@ public enum ConfirmationPresenter {
         let confirm = alert.addButton(withTitle: dialog.confirmTitle)
         confirm.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
+        alert.window.appearance = appearance.nsAppearance
         NSApp.activate()
         return alert.runModal() == .alertFirstButtonReturn
     }

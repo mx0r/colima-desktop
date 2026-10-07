@@ -14,6 +14,7 @@ public struct SettingsView: View {
     public var body: some View {
         Form {
             iconSection
+            appearanceSection
             colimaSection
             socketSection
             generalSection
@@ -71,6 +72,19 @@ public struct SettingsView: View {
             Text("Menu bar icon")
         } footer: {
             Text("Running, changing, stopped, error.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var appearanceSection: some View {
+        Section {
+            appearancePicker("Interface", role: .interface)
+            appearancePicker("Logs and terminal", role: .console)
+        } header: {
+            Text("Appearance")
+        } footer: {
+            Text("System follows macOS. Interface covers the menu, Settings, About and dialogs.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -172,6 +186,7 @@ public struct SettingsView: View {
                 ), prompt: Text("e.g. zsh -l"))
                 .autocorrectionDisabled()
             }
+            textStyleRows(for: .terminal)
         }
     }
 
@@ -183,10 +198,70 @@ public struct SettingsView: View {
             Picker("Keep at most", selection: $model.draft.logBufferCapacity) {
                 ForEach([10000, 50000, 100_000, 250_000], id: \.self) { Text("\($0.formatted()) lines").tag($0) }
             }
+            textStyleRows(for: .logs)
         }
     }
 
     // MARK: Helpers
+
+    /// Installed monospaced font families; read once, when Settings first opens.
+    private static let fontFamilies = ConsoleFonts.monospacedFamilies()
+
+    /// Sample text that shows look-alike characters.
+    private static let fontSample = "colima ▸ Up 3 minutes  0O 1lI {}"
+
+    private func appearancePicker(_ title: String, role: WindowRole) -> some View {
+        Picker(title, selection: Binding(
+            get: { model.draft.appearance(for: role) },
+            set: { model.selectAppearance($0, for: role) }
+        )) {
+            ForEach(AppearanceMode.allCases, id: \.self) { Text($0.displayName).tag($0) }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    /// Font, size, line height and a sample line for the terminal or the logs.
+    @ViewBuilder
+    private func textStyleRows(for console: ConsoleKind) -> some View {
+        let style = model.draft.textStyle(for: console)
+        Picker("Font", selection: textStyleBinding(console, \.fontFamily)) {
+            Text("System monospaced").tag(String?.none)
+            if let family = style.fontFamily, !Self.fontFamilies.contains(family) {
+                Text("\(family) (not installed)").tag(String?.some(family))
+            }
+            Divider()
+            ForEach(Self.fontFamilies, id: \.self) { Text($0).tag(String?.some($0)) }
+        }
+        LabeledContent("Size") {
+            Stepper(value: textStyleBinding(console, \.fontSize), in: ConsoleTextStyle.fontSizeRange, step: 1) {
+                Text("\(style.fontSize.formatted(.number.precision(.fractionLength(0...1)))) pt")
+                    .monospacedDigit()
+            }
+        }
+        LabeledContent("Line height") {
+            Stepper(value: textStyleBinding(console, \.lineHeight), in: ConsoleTextStyle.lineHeightRange, step: 0.1) {
+                Text("\(style.lineHeight.formatted(.number.precision(.fractionLength(1...2))))×")
+                    .monospacedDigit()
+            }
+        }
+        Text(Self.fontSample)
+            .font(Font(ConsoleFonts.font(for: style) as CTFont))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .accessibilityLabel("Font sample")
+    }
+
+    /// Binding to one value of the terminal or logs text style; changes apply at once.
+    private func textStyleBinding<Value>(_ console: ConsoleKind, _ keyPath: WritableKeyPath<ConsoleTextStyle, Value>) -> Binding<Value> {
+        Binding(
+            get: { model.draft.textStyle(for: console)[keyPath: keyPath] },
+            set: { value in
+                var style = model.draft.textStyle(for: console)
+                style[keyPath: keyPath] = value
+                model.setTextStyle(style, for: console)
+            }
+        )
+    }
 
     private func pathField(_ title: String, keyPath: WritableKeyPath<AppSettings, String?>, placeholder: String) -> some View {
         TextField(title, text: Binding(

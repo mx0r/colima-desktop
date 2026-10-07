@@ -26,6 +26,14 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var menuBarIconStyle: MenuBarIconStyle
     /// Which releases the updater offers.
     public var updateChannel: UpdateChannel
+    /// Appearance of menus, Settings, About and dialogs.
+    public var interfaceAppearance: AppearanceMode
+    /// Appearance of logs and terminal windows.
+    public var consoleAppearance: AppearanceMode
+    /// Font and spacing of terminal windows.
+    public var terminalText: ConsoleTextStyle
+    /// Font and spacing of logs windows.
+    public var logsText: ConsoleTextStyle
 
     /// Settings with all values auto-detected.
     public static let defaults = AppSettings()
@@ -43,7 +51,11 @@ public struct AppSettings: Codable, Hashable, Sendable {
         notificationsEnabled: Bool = true,
         selectedProfile: ProfileName? = nil,
         menuBarIconStyle: MenuBarIconStyle = .llamaCubes,
-        updateChannel: UpdateChannel = .stable
+        updateChannel: UpdateChannel = .stable,
+        interfaceAppearance: AppearanceMode = .system,
+        consoleAppearance: AppearanceMode = .system,
+        terminalText: ConsoleTextStyle = .terminalDefault,
+        logsText: ConsoleTextStyle = .logsDefault
     ) {
         self.colimaExecutablePath = colimaExecutablePath
         self.colimaHomePath = colimaHomePath
@@ -57,6 +69,10 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.selectedProfile = selectedProfile
         self.menuBarIconStyle = menuBarIconStyle
         self.updateChannel = updateChannel
+        self.interfaceAppearance = interfaceAppearance
+        self.consoleAppearance = consoleAppearance
+        self.terminalText = terminalText
+        self.logsText = logsText
     }
 
     // Tolerant decoding: missing keys fall back to defaults so stored settings survive app updates.
@@ -76,6 +92,10 @@ public struct AppSettings: Codable, Hashable, Sendable {
         // A style from a newer version falls back to the default instead of failing the whole decode.
         menuBarIconStyle = (try? c.decodeIfPresent(MenuBarIconStyle.self, forKey: .menuBarIconStyle)) ?? d.menuBarIconStyle
         updateChannel = (try? c.decodeIfPresent(UpdateChannel.self, forKey: .updateChannel)) ?? d.updateChannel
+        interfaceAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .interfaceAppearance)) ?? d.interfaceAppearance
+        consoleAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .consoleAppearance)) ?? d.consoleAppearance
+        terminalText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .terminalText)) ?? d.terminalText
+        logsText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .logsText)) ?? d.logsText
     }
 
     /// Docker socket override for a profile, if one is set and not blank.

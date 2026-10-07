@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
     private var router: ActionRouter?
     private var updater: SparkleUpdater?
+    private var appearanceTask: Task<Void, Never>?
     private let windows = WindowManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -41,7 +42,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.store = store
         self.router = router
         MainMenu.router = router
+        observeAppearance(of: store)
         store.start()
+    }
+
+    /// Keeps open windows in step with the appearance settings.
+    private func observeAppearance(of store: AppStore) {
+        let windows = windows
+        windows.setAppearance(interface: store.settings.interfaceAppearance, console: store.settings.consoleAppearance)
+        appearanceTask = Task { [weak store] in
+            guard let store else { return }
+            let changes = Observations { (store.settings.interfaceAppearance, store.settings.consoleAppearance) }
+            for await (interface, console) in changes {
+                windows.setAppearance(interface: interface, console: console)
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

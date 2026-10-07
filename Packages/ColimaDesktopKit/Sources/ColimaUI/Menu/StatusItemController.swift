@@ -17,6 +17,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private var lastUpdates: UpdatesMenuItem?
     private var iconKey: IconKey?
     private var appearanceObservation: NSKeyValueObservation?
+    private var menuAppearance: AppearanceMode?
 
     /// Everything the icon image depends on; the icon is redrawn only when it changes.
     private struct IconKey: Equatable {
@@ -39,7 +40,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         statusItem.menu = menu
         statusItem.button?.imagePosition = .imageOnly
-        render(store.snapshot, style: store.settings.menuBarIconStyle)
+        render(store.snapshot, style: store.settings.menuBarIconStyle, appearance: store.settings.interfaceAppearance)
         observe()
         // Colored icons are drawn for one appearance; redraw when the menu bar turns light or dark.
         appearanceObservation = statusItem.button?.observe(\.effectiveAppearance) { [weak self] _, _ in
@@ -49,21 +50,33 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func observe() {
         observationTask = Task { [weak self, store, updater] in
-            let changes = Observations { (store.snapshot, store.settings.menuBarIconStyle, updater?.pendingUpdateVersion) }
-            for await (snapshot, style, _) in changes {
+            let changes = Observations {
+                (store.snapshot, store.settings.menuBarIconStyle, updater?.pendingUpdateVersion, store.settings.interfaceAppearance)
+            }
+            for await (snapshot, style, _, appearance) in changes {
                 guard let self else { return }
-                self.render(snapshot, style: style)
+                self.render(snapshot, style: style, appearance: appearance)
             }
         }
     }
 
-    private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle) {
+    private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle, appearance: AppearanceMode) {
         updateIcon(snapshot: snapshot, style: style)
         let updates = UpdatesMenuItem(updater: updater)
-        guard snapshot != lastSnapshot || updates != lastUpdates else { return }
+        guard snapshot != lastSnapshot || updates != lastUpdates || appearance != menuAppearance else { return }
         lastSnapshot = snapshot
         lastUpdates = updates
+        menuAppearance = appearance
         renderer.render(MenuModelBuilder.build(snapshot, updates: updates), into: menu)
+        Self.setAppearance(appearance.nsAppearance, on: menu)
+    }
+
+    /// The menu follows the interface appearance, not the menu bar's. Submenus get it too, including new ones.
+    private static func setAppearance(_ appearance: NSAppearance?, on menu: NSMenu) {
+        if menu.appearance?.name != appearance?.name { menu.appearance = appearance }
+        for item in menu.items {
+            if let submenu = item.submenu { setAppearance(appearance, on: submenu) }
+        }
     }
 
     private func updateIcon(snapshot: AppSnapshot? = nil, style: MenuBarIconStyle? = nil) {
@@ -106,7 +119,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     public func menuNeedsUpdate(_ menu: NSMenu) {
         guard menu === self.menu else { return }
         // Synchronous and cheap: apply the latest snapshot; IO happens in menuWillOpen.
-        render(store.snapshot, style: store.settings.menuBarIconStyle)
+        render(store.snapshot, style: store.settings.menuBarIconStyle, appearance: store.settings.interfaceAppearance)
     }
 
     public func menuWillOpen(_ menu: NSMenu) {

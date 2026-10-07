@@ -29,7 +29,7 @@ Packages/ColimaDesktopKit/       all code (local Swift package)
   Sources/ColimaInfrastructure/  processes, colima CLI, unix-socket HTTP, Docker client, system services
   Sources/ColimaFeatures/        AppStore, MenuModelBuilder, logs/terminal/settings view models
   Sources/ColimaUI/              status item, MenuRenderer, icons (Branding/ColimaLlama.swift), windows
-  Sources/ColimaTerminal/        SwiftTerm bridge (isolates the dependency)
+  Sources/ColimaTerminal/        SwiftTerm bridge (isolates the dependency; uses ColimaUI for console fonts)
   Sources/ColimaUpdates/         Sparkle updater (isolates the dependency)
   Sources/ColimaAppShell/        composition root: live dependencies, ActionRouter, AppDelegate
   Sources/ColimaTestSupport/     fakes, ManualClock
@@ -42,6 +42,14 @@ site/                            landing page (static, no scripts)
 
 **Dependency rule (compiler-enforced):** Features and UI never import Infrastructure. Only
 `ColimaAppShell` sees concrete adapters. The app target only calls `ColimaDesktopApplication.run()`.
+
+**Appearance:** never set `NSApp.appearance`. It stays at the macOS setting, so a window group set
+to System follows macOS while the other group is forced light or dark (macOS has no reliable API
+for the system appearance once the app overrides it). `WindowManager` sets each window's appearance
+by role: console (logs, terminals and their sheets) or interface (all other windows, including
+About, alerts and Sparkle's, caught when they become key). The status menu and alerts set the
+interface appearance themselves. Colors that AppKit or SwiftTerm resolve once (layer colors,
+`TerminalView` default colors) must be resolved again when the effective appearance changes.
 
 ## Build, test, run
 
