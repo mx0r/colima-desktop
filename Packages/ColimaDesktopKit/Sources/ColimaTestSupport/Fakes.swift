@@ -277,11 +277,16 @@ public final class InMemorySettingsStore: SettingsPersisting {
 public final class FakeUpdater: UpdateControlling {
     public var automaticallyChecksForUpdates = true
     public var pendingUpdateVersion: String?
+    public var automaticallyDownloadsUpdates = true
+    public var allowsAutomaticUpdates = true
+    public var readyToInstallVersion: String?
     public private(set) var checkCount = 0
+    public private(set) var installCount = 0
 
     public init() {}
 
     public func checkForUpdates() { checkCount += 1 }
+    public func installUpdateAndRelaunch() { installCount += 1 }
 }
 
 /// Login item stub.

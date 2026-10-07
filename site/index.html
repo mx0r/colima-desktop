@@ -195,17 +195,19 @@
   <section class="feature">
     <div class="feature__copy">
       <p class="eyebrow">Updates</p>
-      <h2>New versions show up in the menu, not in your way.</h2>
+      <h2>New versions install themselves, not in your way.</h2>
       <p>
         Once a day, Colima Desktop checks for a new version with
-        <a href="https://sparkle-project.org">Sparkle</a>. When it finds one, the menu offers
-        <strong>Update to 0.7…</strong> — no window opens on its own. Choose it, read what
-        changed, and Sparkle installs the update and relaunches the app.
+        <a href="https://sparkle-project.org">Sparkle</a>, downloads it in the background and
+        installs it the next time the app quits. To have it now, choose
+        <strong>Restart to Update to 0.7</strong> in the menu. No window opens on its own.
       </p>
       <p>
-        <strong>Check for Updates…</strong> asks right away; Settings → Updates turns the daily
-        check off. Every release is signed with the project's update key, and the app refuses an
-        update whose signature does not match the key it ships with.
+        <strong>Check for Updates…</strong> asks right away. Settings → Updates turns off the
+        background download — the menu then offers <strong>Update to 0.7…</strong> instead — or the
+        daily check altogether, and switches the update channel to <strong>Beta</strong> for
+        pre-release versions. Every release is signed with the project's update key, and the app
+        refuses an update whose signature does not match the key it ships with.
       </p>
       <p>
         Updates started with 0.6. Coming from 0.5, install the current version by hand once.
@@ -213,12 +215,12 @@
     </div>
     <!-- An illustration of the menu's last items with an update waiting, not a screenshot. -->
     <figure class="menu-shot" role="img"
-            aria-label="Illustration of the bottom of the Colima Desktop menu offering Update to 0.7">
+            aria-label="Illustration of the bottom of the Colima Desktop menu offering Restart to Update to 0.7">
       <div class="menu" aria-hidden="true">
         <ul>
           <li>Settings…<span class="key">⌘,</span></li>
           <li>About Colima Desktop</li>
-          <li class="hl"><span class="ico">⬇</span>Update to 0.7…</li>
+          <li class="hl"><span class="ico">⬇</span>Restart to Update to 0.7</li>
           <li class="sep"></li>
           <li>Quit Colima Desktop<span class="key">⌘Q</span></li>
         </ul>

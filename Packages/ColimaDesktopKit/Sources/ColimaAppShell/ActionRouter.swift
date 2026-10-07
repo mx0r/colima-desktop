@@ -49,6 +49,8 @@ final class ActionRouter {
             AboutPanel.show(snapshot: store.snapshot)
         case .checkForUpdates:
             updater?.checkForUpdates()
+        case .installUpdate:
+            updater?.installUpdateAndRelaunch()
         case .quit:
             NSApp.terminate(nil)
         }

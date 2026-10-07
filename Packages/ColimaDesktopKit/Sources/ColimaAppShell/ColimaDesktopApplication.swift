@@ -30,7 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = MainMenu.make()
         let store = AppStore(dependencies: LiveEnvironment.dependencies())
         // Debug builds do not update themselves: they would be offered the published release.
-        let updater = SparkleUpdater.isEnabledForMainBundle ? SparkleUpdater() : nil
+        let updater = SparkleUpdater.isEnabledForMainBundle
+            ? SparkleUpdater(allowedChannels: { [weak store] in store?.settings.updateChannel.sparkleChannels ?? [] })
+            : nil
         let router = ActionRouter(store: store, windows: windows, loginItem: SMAppServiceLoginItem(), updater: updater)
         statusItem = StatusItemController(store: store, updater: updater) { [weak router] action in
             router?.handle(action)

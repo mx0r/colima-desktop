@@ -138,8 +138,16 @@ public protocol UpdateControlling: AnyObject {
     var automaticallyChecksForUpdates: Bool { get set }
     /// Version found by a background check and not yet shown to the user; nil when none.
     var pendingUpdateVersion: String? { get }
+    /// Download updates in the background and install them when the app quits (or on request).
+    var automaticallyDownloadsUpdates: Bool { get set }
+    /// Whether automatic downloads can be switched on; false while automatic checks are off.
+    var allowsAutomaticUpdates: Bool { get }
+    /// Version downloaded in the background and ready to install; nil when none.
+    var readyToInstallVersion: String? { get }
     /// Starts a user-initiated check, with progress and result shown by the updater.
     func checkForUpdates()
+    /// Installs the downloaded update now and relaunches the app.
+    func installUpdateAndRelaunch()
 }
 
 /// Finds executables on the host.

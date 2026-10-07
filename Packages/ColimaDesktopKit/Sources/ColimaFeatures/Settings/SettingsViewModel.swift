@@ -152,6 +152,17 @@ public final class SettingsViewModel {
         set { updater?.automaticallyChecksForUpdates = newValue }
     }
 
+    /// Background download and install of updates. Persisted by the updater itself.
+    public var automaticallyDownloadsUpdates: Bool {
+        get { updater?.automaticallyDownloadsUpdates ?? false }
+        set { updater?.automaticallyDownloadsUpdates = newValue }
+    }
+
+    /// Whether the automatic-download switch can be used (it needs automatic checks).
+    public var canChangeAutomaticDownloads: Bool {
+        updater?.allowsAutomaticUpdates ?? false
+    }
+
     /// Checks for updates now.
     public func checkForUpdates() {
         updater?.checkForUpdates()
