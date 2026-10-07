@@ -18,6 +18,8 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     private var iconKey: IconKey?
     private var appearanceObservation: NSKeyValueObservation?
     private var menuAppearance: AppearanceMode?
+    /// Redraws the open menu every second, so durations count up.
+    private var clockTask: Task<Void, Never>?
 
     /// Everything the icon image depends on; the icon is redrawn only when it changes.
     private struct IconKey: Equatable {
@@ -26,6 +28,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         /// Only set for colored styles, which are drawn for one appearance.
         var appearance: NSAppearance.Name?
     }
+
+    /// Interval between redraws of the open menu.
+    static let clockInterval = Duration.seconds(1)
 
     /// Interval between frames of the transition animation.
     static let animationInterval = Duration.milliseconds(400)
@@ -70,10 +75,11 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         }
     }
 
-    private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle, appearance: AppearanceMode) {
+    /// - Parameter force: Rebuild even if nothing changed, for durations that depend on the time.
+    private func render(_ snapshot: AppSnapshot, style: MenuBarIconStyle, appearance: AppearanceMode, force: Bool = false) {
         updateIcon(snapshot: snapshot, style: style)
         let updates = UpdatesMenuItem(updater: updater)
-        guard snapshot != lastSnapshot || updates != lastUpdates || appearance != menuAppearance else { return }
+        guard force || snapshot != lastSnapshot || updates != lastUpdates || appearance != menuAppearance else { return }
         lastSnapshot = snapshot
         lastUpdates = updates
         menuAppearance = appearance
@@ -135,6 +141,14 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     public func menuWillOpen(_ menu: NSMenu) {
         if menu === self.menu {
             store.menuWillOpen()
+            clockTask?.cancel()
+            clockTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: Self.clockInterval)
+                    guard let self, !Task.isCancelled else { return }
+                    render(store.snapshot, style: store.settings.menuBarIconStyle, appearance: store.settings.interfaceAppearance, force: true)
+                }
+            }
         } else if identifier(of: menu) == MenuNodeID.information {
             store.informationMenuWillOpen()
         }
@@ -143,6 +157,8 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
     public func menuDidClose(_ menu: NSMenu) {
         if menu === self.menu {
             store.menuDidClose()
+            clockTask?.cancel()
+            clockTask = nil
         } else if identifier(of: menu) == MenuNodeID.information {
             store.informationMenuDidClose()
         }

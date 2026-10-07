@@ -37,6 +37,16 @@ public final class AppStore {
     @ObservationIgnored private var informationTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     @ObservationIgnored private var operationTask: Task<Void, Never>?
+    /// Start and finish times by container ID, with the state they were read in. The container list
+    /// does not include them, so they come from inspect: once per container, and again when its
+    /// state changes or a Docker event names it (a restart keeps the state "running").
+    @ObservationIgnored private var runTimes: [String: RunTimes] = [:]
+
+    private struct RunTimes {
+        var state: ContainerState
+        var startedAt: Date?
+        var finishedAt: Date?
+    }
 
     /// Debounce for file system changes.
     static let fileChangeDebounce = Duration.milliseconds(250)
@@ -286,7 +296,9 @@ public final class AppStore {
         do {
             let containers = try await engine.containers()
             guard generation == self.generation else { return }
-            snapshot.containers = containers
+            let timed = await addRunTimes(to: containers, engine: engine)
+            guard generation == self.generation else { return }
+            snapshot.containers = timed
             snapshot.docker = .reachable
         } catch {
             guard generation == self.generation else { return }
@@ -304,8 +316,9 @@ public final class AppStore {
             var backoff = Duration.seconds(1)
             while !Task.isCancelled {
                 do {
-                    for try await _ in engine.events() {
+                    for try await event in engine.events() {
                         backoff = .seconds(1)
+                        self?.runTimes[event.actorID] = nil
                         self?.scheduleRefresh(after: Self.dockerEventDebounce)
                     }
                 } catch {}
@@ -317,9 +330,38 @@ public final class AppStore {
         }
     }
 
+    /// The containers with their start and finish times; inspects only those not cached for their state.
+    /// A failed inspect is cached too (as unknown), so it is not repeated on every refresh.
+    private func addRunTimes(to containers: [Container], engine: any DockerEngine) async -> [Container] {
+        let stale = containers.filter { runTimes[$0.id]?.state != $0.state }
+        if !stale.isEmpty {
+            let fetched = await withTaskGroup(of: (String, RunTimes).self) { group in
+                for container in stale {
+                    group.addTask {
+                        let details = try? await engine.inspect(containerID: container.id)
+                        return (container.id, RunTimes(state: container.state, startedAt: details?.startedAt, finishedAt: details?.finishedAt))
+                    }
+                }
+                var result: [String: RunTimes] = [:]
+                for await (id, times) in group { result[id] = times }
+                return result
+            }
+            runTimes.merge(fetched) { $1 }
+        }
+        let ids = Set(containers.map(\.id))
+        runTimes = runTimes.filter { ids.contains($0.key) }
+        return containers.map { container in
+            var container = container
+            container.startedAt = runTimes[container.id]?.startedAt
+            container.finishedAt = runTimes[container.id]?.finishedAt
+            return container
+        }
+    }
+
     private func disconnectDocker() {
         eventsTask?.cancel()
         eventsTask = nil
+        runTimes = [:]
         engine = nil
         snapshot.details = nil
         snapshot.docker = .notApplicable

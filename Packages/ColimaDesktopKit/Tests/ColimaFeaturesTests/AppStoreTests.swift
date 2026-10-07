@@ -365,3 +365,50 @@ struct SingleFlightTests {
         #expect(counter.runs == 2)
     }
 }
+
+@MainActor
+@Suite("Container run times")
+struct ContainerRunTimeTests {
+    private let started = Date(timeIntervalSince1970: 1_799_990_000)
+
+    @Test("Start times come from inspect, once per container and state")
+    func cached() async {
+        let web = Sample.container("web")
+        let harness = StoreHarness(containers: [web])
+        harness.docker.update { $0.details[web.id] = Sample.containerDetails(web, startedAt: started) }
+        _ = await harness.started()
+        #expect(await eventually { harness.store.snapshot.containers.first?.startedAt == started })
+        let calls = harness.docker.current.inspectCalls.count
+        #expect(calls == 1)
+
+        await harness.store.refresh()
+        #expect(harness.docker.current.inspectCalls.count == calls)
+    }
+
+    @Test("A state change or an event for the container reads the times again")
+    func invalidated() async {
+        let web = Sample.container("web")
+        let harness = StoreHarness(containers: [web])
+        harness.docker.update { $0.details[web.id] = Sample.containerDetails(web, startedAt: started) }
+        _ = await harness.started()
+        #expect(await eventually { harness.store.snapshot.containers.first?.startedAt == started })
+
+        let finished = started.addingTimeInterval(60)
+        harness.docker.update {
+            $0.containers[0].state = .exited
+            $0.details[web.id] = Sample.containerDetails(web, state: .exited, startedAt: started, finishedAt: finished)
+        }
+        await harness.store.refresh()
+        #expect(harness.store.snapshot.containers.first?.finishedAt == finished)
+        #expect(harness.docker.current.inspectCalls.count == 2)
+
+        let restarted = finished.addingTimeInterval(5)
+        harness.docker.update { $0.details[web.id] = Sample.containerDetails(web, state: .exited, startedAt: restarted, finishedAt: finished) }
+        harness.docker.emitEvent(DockerEvent(type: "container", action: "restart", actorID: web.id))
+        // The heartbeat sleeps already; the event adds the debounce.
+        _ = await harness.clock.waitForSleepers(2)
+        await harness.clock.advance(by: AppStore.dockerEventDebounce)
+        #expect(await eventually { harness.store.snapshot.containers.first?.startedAt == restarted })
+    }
+}
+

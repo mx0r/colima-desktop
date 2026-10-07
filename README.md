@@ -28,8 +28,11 @@ socket, so the docker CLI is not needed.
   copy its value. Loaded only while the submenu is open.
 - **Profile** picker for all Colima profiles.
 - **Start, Stop… and Restart…** of the VM. Stop and restart ask first.
-- **Containers**, running and stopped, grouped by Compose project. Each container has:
-  - details (image, status, ID, created, Compose service, ports),
+- **Containers**, running and stopped, grouped by Compose project; with more than six, the list
+  moves into a **Containers** submenu. Durations show their two largest units (`2d 4h`, `3h 12m`,
+  `5m 30s`, `42s`) and count up while the menu is open. Each container has:
+  - details (image, status, ID, created, Compose service, ports; more than one port gets its own
+    **Ports** submenu with its Open items),
   - **Logs…** — follow/pause, filter with highlighting, timestamps, stderr in red, markers you
     insert yourself, copy and save,
   - **Terminal…** — an embedded shell in the container,

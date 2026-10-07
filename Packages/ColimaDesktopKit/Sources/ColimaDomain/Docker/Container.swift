@@ -23,6 +23,11 @@ public struct Container: Identifiable, Hashable, Sendable {
     public var ports: [PublishedPort]
     /// Container labels.
     public var labels: [String: String]
+    /// Start of the current or last run; the container list does not include it, so it comes from
+    /// inspect and is nil until then.
+    public var startedAt: Date?
+    /// End of the last run, from inspect.
+    public var finishedAt: Date?
 
     /// Creates a container value.
     public init(

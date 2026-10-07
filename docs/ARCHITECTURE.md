@@ -70,6 +70,15 @@ output cannot deadlock it. It terminates the process on cancellation and timeout
 GUI apps start with a minimal `PATH`. The child `PATH` gets the colima directory and the usual install
 locations prepended.
 
+## Container durations
+
+`GET /containers/json` has no start or finish time, only Docker's rounded text ("Up 2 hours"). `AppStore`
+inspects each container once for `StartedAt` and `FinishedAt` and caches them with the state it saw; it
+inspects again when the state changes or a Docker event names the container (a restart keeps "running"). A
+failed inspect is cached as unknown, and Docker's text is shown then. `Format.status(of:now:)` swaps Docker's
+duration for an exact one, keeping its prefix and suffix ("Exited (0) … ago", "(healthy)"). While the menu is
+open, `StatusItemController` rebuilds it every second so the durations count up.
+
 ## Launch
 
 `ColimaDesktopApplication.run()` first checks for another running copy with the same bundle ID

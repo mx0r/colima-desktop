@@ -158,4 +158,20 @@ struct LiveColimaTests {
         }
         try await engine.perform(.remove, containerID: created.id)
     }
+
+    @Test("Real status texts get exact durations from inspect times")
+    func statusDurations() async throws {
+        let engine = try await docker()
+        for var container in try await engine.containers() {
+            let details = try await engine.inspect(containerID: container.id)
+            container.startedAt = details.startedAt
+            container.finishedAt = details.finishedAt
+            let text = Format.status(of: container)
+            if container.statusText.hasPrefix("Up ") || container.statusText.hasPrefix("Exited (") {
+                #expect(text.wholeMatch(of: #/(Up|Exited \(-?\d+\)) \d+[dhms]( \d+[hms])?( ago)?( \(.+\))?/#) != nil, "\(container.statusText) → \(text)")
+            }
+            print("status: \(container.statusText) → \(text)")
+        }
+    }
 }
+

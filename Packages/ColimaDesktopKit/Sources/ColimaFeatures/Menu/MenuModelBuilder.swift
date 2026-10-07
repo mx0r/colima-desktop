@@ -200,6 +200,10 @@ public enum MenuModelBuilder {
 
     // MARK: Containers
 
+    /// Containers listed in the main menu; more go into a submenu. Counts running and stopped ones,
+    /// since both take a row.
+    static let inlineContainerLimit = 6
+
     static func containerSection(_ snapshot: AppSnapshot, now: Date) -> [MenuNode] {
         guard snapshot.lifecycle.observed == .running else {
             return [.note("containers.none", "Containers are available while Colima runs")]
@@ -231,10 +235,18 @@ public enum MenuModelBuilder {
             return nodes + [.note("containers.empty", "No containers")] + newContainer
         }
         let running = snapshot.containers.filter { $0.state == .running }.count
-        nodes.append(.header("containers.header", "Containers (\(running) of \(snapshot.containers.count) running)"))
+        let title = "Containers (\(running) of \(snapshot.containers.count) running)"
+        var list: [MenuNode] = []
         for group in ContainerGrouping.group(snapshot.containers) {
-            nodes.append(.header("group.\(group.id)", group.project ?? "Other"))
-            nodes += group.containers.map { containerNode($0, snapshot: snapshot, now: now) }
+            list.append(.header("group.\(group.id)", group.project ?? "Other"))
+            list += group.containers.map { containerNode($0, snapshot: snapshot, now: now) }
+        }
+        // A long list moves into a submenu, so the main menu keeps a fixed size.
+        if snapshot.containers.count > inlineContainerLimit {
+            nodes.append(MenuNode(id: "containers.menu", title: title, image: .symbol("shippingbox"), children: list))
+        } else {
+            nodes.append(.header("containers.header", title))
+            nodes += list
         }
         return nodes + newContainer
     }
@@ -248,15 +260,19 @@ public enum MenuModelBuilder {
 
         var children: [MenuNode] = [
             .value("\(prefix).image", "Image", container.image),
-            .value("\(prefix).status", "Status", container.statusText.isEmpty ? container.state.displayName : container.statusText),
+            .value("\(prefix).status", "Status", Format.status(of: container, now: now)),
             .value("\(prefix).id", "ID", container.shortID),
-            .value("\(prefix).created", "Created", "\(Format.dateTime(container.created)) (\(Format.relative(container.created, now: now)))"),
+            .value("\(prefix).created", "Created", "\(Format.dateTime(container.created)) (\(Format.duration(now.timeIntervalSince(container.created))) ago)"),
         ]
         if let service = container.composeService {
             children.append(.value("\(prefix).service", "Service", service))
         }
-        if !container.ports.isEmpty {
-            children.append(.value("\(prefix).ports", "Ports", container.ports.map(\.displayText).joined(separator: ", ")))
+        // One port fits in a row; more get their own submenu with their Open items.
+        let groupsPorts = container.ports.count > 1
+        if groupsPorts {
+            children.append(portsNode(container, prefix: prefix))
+        } else if let port = container.ports.first {
+            children.append(.value("\(prefix).ports", "Ports", port.displayText))
         }
         children.append(.separator("\(prefix).sep.tools"))
         children.append(MenuNode(
@@ -272,18 +288,10 @@ public enum MenuModelBuilder {
             isEnabled: isRunning,
             action: .openTerminal(containerID: container.id, name: name)
         ))
-        let browsable = container.browsablePorts
-        if !browsable.isEmpty {
+        let openNodes = openPortNodes(container, prefix: prefix)
+        if !groupsPorts, !openNodes.isEmpty {
             children.append(.separator("\(prefix).sep.ports"))
-            for port in browsable {
-                guard let url = port.browsableURL, let publicPort = port.publicPort else { continue }
-                children.append(MenuNode(
-                    id: "\(prefix).open.\(publicPort)",
-                    title: "Open localhost:\(publicPort)",
-                    image: .symbol("safari"),
-                    action: .openURL(url)
-                ))
-            }
+            children += openNodes
         }
         children.append(.separator("\(prefix).sep.actions"))
         if container.state.isAlive {
@@ -308,7 +316,7 @@ public enum MenuModelBuilder {
         let subtitle: String = if let pending {
             "\(pending.progressText)…"
         } else {
-            [container.statusText, container.image].filter { !$0.isEmpty }.joined(separator: " · ")
+            [Format.status(of: container, now: now), container.image].filter { !$0.isEmpty }.joined(separator: " · ")
         }
         return MenuNode(
             id: prefix,
@@ -319,6 +327,27 @@ public enum MenuModelBuilder {
             indentation: 1,
             children: children
         )
+    }
+
+    /// "Ports (N)": each mapping (click to copy), then an Open item per browsable port.
+    static func portsNode(_ container: Container, prefix: String) -> MenuNode {
+        var rows = container.ports.enumerated().map { index, port in
+            MenuNode(id: "\(prefix).port.\(index)", title: port.displayText, action: .copy(port.displayText), toolTip: "Click to copy")
+        }
+        let openNodes = openPortNodes(container, prefix: prefix)
+        if !openNodes.isEmpty {
+            rows.append(.separator("\(prefix).ports.sep"))
+            rows += openNodes
+        }
+        return MenuNode(id: "\(prefix).ports", title: "Ports (\(container.ports.count))", image: .symbol("network"), children: rows)
+    }
+
+    /// "Open localhost:PORT" for each published TCP port.
+    static func openPortNodes(_ container: Container, prefix: String) -> [MenuNode] {
+        container.browsablePorts.compactMap { port in
+            guard let url = port.browsableURL, let publicPort = port.publicPort else { return nil }
+            return MenuNode(id: "\(prefix).open.\(publicPort)", title: "Open localhost:\(publicPort)", image: .symbol("safari"), action: .openURL(url))
+        }
     }
 
     private static func color(for state: ContainerState) -> StatusColor {

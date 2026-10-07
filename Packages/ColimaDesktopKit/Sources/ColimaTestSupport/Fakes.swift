@@ -123,6 +123,10 @@ public final class FakeDockerEngine: DockerEngine {
         public var createResults: [Result<CreatedContainer, DockerError>] = []
         /// Specs of container creates, in order.
         public var createdSpecs: [ContainerSpec] = []
+        /// Inspect answers by container ID; others fail with 404.
+        public var details: [String: ContainerDetails] = [:]
+        /// Container IDs inspected, in order.
+        public var inspectCalls: [String] = []
 
         public init() {}
     }
@@ -179,7 +183,12 @@ public final class FakeDockerEngine: DockerEngine {
     }
 
     public func inspect(containerID: String) async throws -> ContainerDetails {
-        throw DockerError.api(status: 404, message: "not scripted")
+        let details = state.withLock { state in
+            state.inspectCalls.append(containerID)
+            return state.details[containerID]
+        }
+        guard let details else { throw DockerError.api(status: 404, message: "not scripted") }
+        return details
     }
 
     public func perform(_ action: ContainerAction, containerID: String) async throws {
@@ -383,6 +392,20 @@ final class Gate: Sendable {
 
 /// Sample values for tests.
 public enum Sample {
+    /// Inspect details for a sample container.
+    public static func containerDetails(
+        _ container: Container,
+        state: ContainerState? = nil,
+        startedAt: Date? = nil,
+        finishedAt: Date? = nil
+    ) -> ContainerDetails {
+        ContainerDetails(
+            id: container.id, name: container.name, image: container.image, tty: false, command: ["sh"],
+            state: state ?? container.state, startedAt: startedAt, finishedAt: finishedAt, exitCode: nil,
+            health: nil, restartCount: 0, platform: "linux", networks: [:], mounts: []
+        )
+    }
+
     public static func instance(_ name: String = "default", status: VMStatus = .running) -> ColimaInstance {
         ColimaInstance(profile: ProfileName(name), status: status, arch: "aarch64", cpus: 4, memoryBytes: 8 << 30, diskBytes: 100 << 30, runtime: "docker")
     }

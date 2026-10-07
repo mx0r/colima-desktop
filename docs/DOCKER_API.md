@@ -20,7 +20,7 @@ Requests use the `/v1.44` prefix. Docker 25 through 29 accept it (Docker 29.0–
 | version check | `GET /version` |
 | engine facts | `GET /v1.44/info` |
 | disk usage | `GET /v1.44/system/df` |
-| containers | `GET /v1.44/containers/json?all=1` |
+| containers | `GET /v1.44/containers/json?all=1` (no start time: `Status` is rounded text, so start and finish times come from inspect, cached per container and state) |
 | details | `GET /v1.44/containers/{id}/json` |
 | start / stop / restart | `POST /v1.44/containers/{id}/{start,stop,restart}` (304 = already in that state) |
 | delete | `DELETE /v1.44/containers/{id}`, without `force` and `v`: the engine refuses running containers (409) and keeps volumes |

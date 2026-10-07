@@ -23,7 +23,9 @@ Swift Testing, one target per layer:
 - **ColimaFeaturesTests:**
   - `AppStore` with fakes and a `ManualClock`: refresh tiers, debouncing, profile switches, stale-result
     dropping, operations, notifications.
-  - Menu model scenarios.
+  - Menu model scenarios, including the Ports and Containers submenus.
+  - Duration and status formatting; run times read by inspect once per container and state, and again
+    after an event.
   - Which copy keeps running when several start (`SingleInstancePolicy`).
   - Logs, terminal and settings view models.
   - The New Container form's validation and its view model (debounced search, tags, pull on 404, always
@@ -69,6 +71,13 @@ Run the app (`make run`, or `make install` for launch at login) and check:
       works.
 - [ ] One copy: with the app running, open it again from Finder, and open another copy (a Debug build, or
       `open -n`). No second icon appears, and the running copy opens its menu.
+- [ ] Durations: a container started a minute ago shows `Up 1m 5s` and counts up while the menu is open;
+      exited ones show `Exited (0) 3h 8m ago`; the Created row ends in `(… ago)` in the same style. After
+      `docker restart`, the uptime starts again from 0s.
+- [ ] A container with several published ports has a **Ports (N)** submenu with copyable rows and Open items;
+      a container with one port shows it inline, as before.
+- [ ] With seven or more containers, the list sits in a **Containers (x of y running)** submenu; with six or
+      fewer it is inline.
 - [ ] `colima stop` / `colima start` in a shell updates the icon without opening the menu.
 - [ ] With the menu open, `docker run --rm -d nginx` in a shell adds the container to the open menu, and an
       open container submenu stays open.
