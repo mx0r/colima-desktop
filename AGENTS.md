@@ -170,6 +170,13 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
   `true`): that stalls Sparkle's update cycle until the app relaunches, and Sparkle still installs
   on quit. The menu shows "Restart to Update to X" from `readyToInstallVersion`.
 - **Read plists with `plutil -extract … raw`, not `defaults read`**, which can answer from a cache.
+- **A pull with an empty `tag` pulls every tag of the repository.** `ImageReference.pullParameters`
+  always sends a digest, the tag, or `latest`.
+- **Pull errors can come inside a 200 response** (as an `error` message once the pull started);
+  `pullImage` turns them into `DockerError.pullFailed`. A cancelled `AsyncThrowingStream` ends without
+  an error, so the view model checks for cancellation after the loop.
+- **Image tags are not in the Engine API.** The Docker Hub catalog reads them from hub.docker.com;
+  other registries have no search (OCI distribution spec) and are typed by name.
 
 ## Verifying changes
 

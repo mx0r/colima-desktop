@@ -1,0 +1,16 @@
+{"status":"Pulling from library/redis","id":"8"}
+{"status":"Pulling fs layer","progressDetail":{},"id":"5a3f1b2c9d01"}
+{"status":"Pulling fs layer","progressDetail":{},"id":"7e4d2c1b0a99"}
+{"status":"Waiting","progressDetail":{},"id":"7e4d2c1b0a99"}
+{"status":"Downloading","progressDetail":{"current":524288,"total":3145728},"progress":"[========>        ]  524.3kB/3.146MB","id":"5a3f1b2c9d01"}
+{"status":"Downloading","progressDetail":{"current":3145728,"total":3145728},"progress":"[==================>]  3.146MB/3.146MB","id":"5a3f1b2c9d01"}
+{"status":"Verifying Checksum","progressDetail":{},"id":"5a3f1b2c9d01"}
+{"status":"Download complete","progressDetail":{},"id":"5a3f1b2c9d01"}
+{"status":"Downloading","progressDetail":{"current":1048576,"total":1048576},"progress":"[==================>]  1.049MB/1.049MB","id":"7e4d2c1b0a99"}
+{"status":"Download complete","progressDetail":{},"id":"7e4d2c1b0a99"}
+{"status":"Extracting","progressDetail":{"current":3145728,"total":3145728},"progress":"[==================>]  3.146MB/3.146MB","id":"5a3f1b2c9d01"}
+{"status":"Pull complete","progressDetail":{},"id":"5a3f1b2c9d01"}
+{"status":"Extracting","progressDetail":{"current":1048576,"total":1048576},"progress":"[==================>]  1.049MB/1.049MB","id":"7e4d2c1b0a99"}
+{"status":"Pull complete","progressDetail":{},"id":"7e4d2c1b0a99"}
+{"status":"Digest: sha256:0d6b9e3c1f2a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e"}
+{"status":"Status: Downloaded newer image for redis:8"}

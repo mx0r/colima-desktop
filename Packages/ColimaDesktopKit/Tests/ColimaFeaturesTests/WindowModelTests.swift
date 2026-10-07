@@ -207,6 +207,9 @@ struct TerminalSessionModelTests {
             func exec(containerID: String, command: [String], size: TerminalSize) async throws -> any ExecSession {
                 throw DockerError.api(status: 409, message: "container is not running")
             }
+            func searchImages(term: String, limit: Int) async throws -> [ImageSearchResult] { [] }
+            func pullImage(_ reference: ImageReference) -> AsyncThrowingStream<PullMessage, Error> { base.pullImage(reference) }
+            func createContainer(_ spec: ContainerSpec) async throws -> CreatedContainer { try await base.createContainer(spec) }
         }
         let sut = TerminalSessionModel(containerID: "abc", containerName: "web", engine: FailingEngine(), command: ["sh"], clock: clock)
         sut.connect(size: TerminalSize(columns: 80, rows: 24))

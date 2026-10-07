@@ -43,8 +43,14 @@ public struct TerminalSize: Hashable, Sendable {
     }
 }
 
+/// Image search on Docker Hub through an engine.
+public protocol ImageSearching: Sendable {
+    /// Repositories on Docker Hub matching a term, in the engine's order.
+    func searchImages(term: String, limit: Int) async throws -> [ImageSearchResult]
+}
+
 /// Docker Engine API access for one engine (one socket).
-public protocol DockerEngine: Sendable {
+public protocol DockerEngine: ImageSearching {
     /// Checks that the engine is reachable and speaks a supported API version.
     func verifyCompatibility() async throws
 
@@ -71,6 +77,13 @@ public protocol DockerEngine: Sendable {
 
     /// Starts an interactive TTY process in a container.
     func exec(containerID: String, command: [String], size: TerminalSize) async throws -> any ExecSession
+
+    /// Pulls an image, streaming Docker's progress messages. Fails with `DockerError.pullFailed`
+    /// when the engine reports an error mid-stream. Cancel the consuming task to stop the pull.
+    func pullImage(_ reference: ImageReference) -> AsyncThrowingStream<PullMessage, Error>
+
+    /// Creates (does not start) a container. A missing image fails with HTTP 404.
+    func createContainer(_ spec: ContainerSpec) async throws -> CreatedContainer
 }
 
 /// An interactive process inside a container.

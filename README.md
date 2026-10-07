@@ -36,13 +36,19 @@ socket, so the docker CLI is not needed.
   - **Open localhost:PORT** for each published TCP port,
   - start, stop… and restart…, and delete… once the container is stopped (volumes and the image
     are kept).
+- **New Container…**: search Docker Hub (or type any public image, for example
+  `ghcr.io/owner/app`), pick a tag from the recent ones, and fill in a form: name, command,
+  restart policy, ports, environment variables and volumes. The app pulls the image if it is
+  missing, with progress, then creates and starts the container, and offers its logs and a
+  terminal. Tags without an image for the VM's architecture are marked.
 - **Updates** through [Sparkle](https://sparkle-project.org): a daily background check, and new
   versions downloaded and installed in the background — on quit, or right away with **Restart to
   Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
-- **Settings**: menu bar icon style, appearance, launch at login, updates, notifications, refresh
-  interval, terminal shell, log sizes, and overrides for everything detected automatically.
+- **Settings**: menu bar icon style, appearance, image sources, launch at login, updates,
+  notifications, refresh interval, terminal shell, log sizes, and overrides for everything
+  detected automatically.
 - **Appearance**: System, Light or Dark, set apart for the interface (menu, Settings, About,
   dialogs), for terminal windows and for logs windows. The terminal and the logs each have their
   own font, size and line height too. Changes apply to open windows at once.

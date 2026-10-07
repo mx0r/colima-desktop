@@ -94,3 +94,9 @@ line height. The views read it from the settings during `body`, so open windows 
   batched every 100 ms.
 - **Terminal:** SwiftTerm `TerminalView` fed by a Docker exec session. Input is serialized through an
   `AsyncStream`, and resizes are debounced.
+- **New Container:** `NewContainerViewModel` searches every enabled `ImageCatalog` after a pause in typing,
+  loads the tags of the chosen image, and validates `ContainerForm` into a `ContainerSpec`. Creating runs
+  create → (404: pull, create again) → start, with the pull's `PullProgress` in the window; Cancel stops the
+  pull. Image sources are a setting (`imageSources`); `ActionRouter` builds a catalog per enabled kind. The
+  only kind is Docker Hub (`DockerHubCatalog`: search through the engine's `ImageSearching`, tags over HTTPS
+  from hub.docker.com). A new registry is a new `ImageSourceKind` and an `ImageCatalog` implementation.
