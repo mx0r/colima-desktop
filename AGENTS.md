@@ -44,10 +44,10 @@ site/                            landing page (static, no scripts)
 `ColimaAppShell` sees concrete adapters. The app target only calls `ColimaDesktopApplication.run()`.
 
 **Appearance:** never set `NSApp.appearance`. It stays at the macOS setting, so a window group set
-to System follows macOS while the other group is forced light or dark (macOS has no reliable API
+to System follows macOS while another group is forced light or dark (macOS has no reliable API
 for the system appearance once the app overrides it). `WindowManager` sets each window's appearance
-by role: console (logs, terminals and their sheets) or interface (all other windows, including
-About, alerts and Sparkle's, caught when they become key). The status menu and alerts set the
+by role: `.console(.terminal)` or `.console(.logs)` (those windows and their sheets) or interface
+(all other windows, including About, alerts and Sparkle's, caught when they become key). The status menu and alerts set the
 interface appearance themselves. Colors that AppKit or SwiftTerm resolve once (layer colors,
 `TerminalView` default colors) must be resolved again when the effective appearance changes.
 

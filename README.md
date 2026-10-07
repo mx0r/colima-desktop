@@ -44,8 +44,8 @@ socket, so the docker CLI is not needed.
 - **Settings**: menu bar icon style, appearance, launch at login, updates, notifications, refresh
   interval, terminal shell, log sizes, and overrides for everything detected automatically.
 - **Appearance**: System, Light or Dark, set apart for the interface (menu, Settings, About,
-  dialogs) and for logs and terminal windows. The terminal and the logs each have their own font,
-  size and line height. Changes apply to open windows at once.
+  dialogs), for terminal windows and for logs windows. The terminal and the logs each have their
+  own font, size and line height too. Changes apply to open windows at once.
 
 ### Menu bar icon styles
 

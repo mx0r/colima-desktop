@@ -92,11 +92,12 @@ public final class SettingsViewModel {
         applyNow()
     }
 
-    /// Sets the appearance of interface or console windows. Applied at once so open windows switch while the user compares.
+    /// Sets the appearance of interface, terminal or logs windows. Applied at once so open windows switch while the user compares.
     public func selectAppearance(_ mode: AppearanceMode, for role: WindowRole) {
         switch role {
         case .interface: draft.interfaceAppearance = mode
-        case .console: draft.consoleAppearance = mode
+        case .console(.terminal): draft.terminalAppearance = mode
+        case .console(.logs): draft.logsAppearance = mode
         }
         applyNow()
     }

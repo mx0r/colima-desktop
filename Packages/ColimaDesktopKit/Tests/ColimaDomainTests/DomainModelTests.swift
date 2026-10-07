@@ -100,13 +100,15 @@ struct DomainModelTests {
     func appearanceSettings() throws {
         let defaults = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
         #expect(defaults.interfaceAppearance == .system)
-        #expect(defaults.consoleAppearance == .system)
+        #expect(defaults.terminalAppearance == .system)
+        #expect(defaults.logsAppearance == .system)
         #expect(defaults.terminalText == .terminalDefault)
         #expect(defaults.logsText == .logsDefault)
 
-        let odd = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"interfaceAppearance": "sepia", "consoleAppearance": "dark", "terminalText": {"fontSize": 200, "lineHeight": 0.2, "fontFamily": "Menlo"}}"#.utf8))
+        let odd = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"interfaceAppearance": "sepia", "terminalAppearance": "dark", "logsAppearance": "light", "terminalText": {"fontSize": 200, "lineHeight": 0.2, "fontFamily": "Menlo"}}"#.utf8))
         #expect(odd.interfaceAppearance == .system)
-        #expect(odd.consoleAppearance == .dark)
+        #expect(odd.terminalAppearance == .dark)
+        #expect(odd.logsAppearance == .light)
         #expect(odd.terminalText.fontSize == ConsoleTextStyle.fontSizeRange.upperBound)
         #expect(odd.terminalText.lineHeight == ConsoleTextStyle.lineHeightRange.lowerBound)
         #expect(odd.terminalText.fontFamily == "Menlo")
@@ -120,11 +122,26 @@ struct DomainModelTests {
         #expect(style.lineHeight == ConsoleTextStyle.lineHeightRange.upperBound)
     }
 
-    @Test("Interface and console windows each take their own appearance")
+    @Test("Interface, terminal and logs windows each take their own appearance")
     func appearanceForRole() {
-        let settings = AppSettings(interfaceAppearance: .dark, consoleAppearance: .system)
+        let settings = AppSettings(interfaceAppearance: .dark, terminalAppearance: .system, logsAppearance: .light)
         #expect(settings.appearance(for: .interface) == .dark)
-        #expect(settings.appearance(for: .console) == .system)
+        #expect(settings.appearance(for: .console(.terminal)) == .system)
+        #expect(settings.appearance(for: .console(.logs)) == .light)
+    }
+
+    @Test("The shared logs-and-terminal appearance of 0.7.0-beta.2 carries over to both")
+    func legacyConsoleAppearance() throws {
+        let legacy = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"consoleAppearance": "dark"}"#.utf8))
+        #expect(legacy.terminalAppearance == .dark)
+        #expect(legacy.logsAppearance == .dark)
+
+        let mixed = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"consoleAppearance": "dark", "logsAppearance": "light"}"#.utf8))
+        #expect(mixed.terminalAppearance == .dark)
+        #expect(mixed.logsAppearance == .light)
+
+        let encoded = String(decoding: try JSONEncoder().encode(legacy), as: UTF8.self)
+        #expect(!encoded.contains("consoleAppearance"))
     }
 
     @Test("Terminal and logs each have their own text style")
@@ -146,7 +163,7 @@ struct DomainModelTests {
 
     @Test("Settings round-trip through JSON")
     func settingsRoundTrip() throws {
-        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols, updateChannel: .beta, interfaceAppearance: .dark, consoleAppearance: .light, terminalText: ConsoleTextStyle(fontFamily: "Menlo", fontSize: 14, lineHeight: 1.3), logsText: ConsoleTextStyle(fontFamily: nil, fontSize: 10, lineHeight: 1.1))
+        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols, updateChannel: .beta, interfaceAppearance: .dark, terminalAppearance: .light, logsAppearance: .dark, terminalText: ConsoleTextStyle(fontFamily: "Menlo", fontSize: 14, lineHeight: 1.3), logsText: ConsoleTextStyle(fontFamily: nil, fontSize: 10, lineHeight: 1.1))
         let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(original))
         #expect(decoded == original)
     }

@@ -73,7 +73,7 @@ final class ActionRouter {
             title: "Logs — \(name)",
             size: NSSize(width: 900, height: 560),
             autosaveName: "LogsWindow",
-            role: .console,
+            role: .console(.logs),
             onClose: { model.stop() },
             content: { [store] in LogsWindowView(model: model, textStyle: { store.settings.logsText }) }
         )
@@ -93,7 +93,7 @@ final class ActionRouter {
             title: "Terminal — \(name)",
             size: NSSize(width: 820, height: 520),
             autosaveName: "TerminalWindow",
-            role: .console,
+            role: .console(.terminal),
             onClose: { model.close() },
             content: { [store] in TerminalWindowView(model: model, textStyle: { store.settings.terminalText }) }
         )

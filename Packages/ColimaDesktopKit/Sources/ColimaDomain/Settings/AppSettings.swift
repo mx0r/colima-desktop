@@ -28,8 +28,10 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var updateChannel: UpdateChannel
     /// Appearance of menus, Settings, About and dialogs.
     public var interfaceAppearance: AppearanceMode
-    /// Appearance of logs and terminal windows.
-    public var consoleAppearance: AppearanceMode
+    /// Appearance of terminal windows.
+    public var terminalAppearance: AppearanceMode
+    /// Appearance of logs windows.
+    public var logsAppearance: AppearanceMode
     /// Font and spacing of terminal windows.
     public var terminalText: ConsoleTextStyle
     /// Font and spacing of logs windows.
@@ -53,7 +55,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
         menuBarIconStyle: MenuBarIconStyle = .llamaCubes,
         updateChannel: UpdateChannel = .stable,
         interfaceAppearance: AppearanceMode = .system,
-        consoleAppearance: AppearanceMode = .system,
+        terminalAppearance: AppearanceMode = .system,
+        logsAppearance: AppearanceMode = .system,
         terminalText: ConsoleTextStyle = .terminalDefault,
         logsText: ConsoleTextStyle = .logsDefault
     ) {
@@ -70,7 +73,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.menuBarIconStyle = menuBarIconStyle
         self.updateChannel = updateChannel
         self.interfaceAppearance = interfaceAppearance
-        self.consoleAppearance = consoleAppearance
+        self.terminalAppearance = terminalAppearance
+        self.logsAppearance = logsAppearance
         self.terminalText = terminalText
         self.logsText = logsText
     }
@@ -93,9 +97,17 @@ public struct AppSettings: Codable, Hashable, Sendable {
         menuBarIconStyle = (try? c.decodeIfPresent(MenuBarIconStyle.self, forKey: .menuBarIconStyle)) ?? d.menuBarIconStyle
         updateChannel = (try? c.decodeIfPresent(UpdateChannel.self, forKey: .updateChannel)) ?? d.updateChannel
         interfaceAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .interfaceAppearance)) ?? d.interfaceAppearance
-        consoleAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .consoleAppearance)) ?? d.consoleAppearance
+        // 0.7.0-beta.2 had one setting for logs and terminal; it carries over to both.
+        let shared = try? decoder.container(keyedBy: LegacyKeys.self).decodeIfPresent(AppearanceMode.self, forKey: .consoleAppearance)
+        terminalAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .terminalAppearance)) ?? shared ?? d.terminalAppearance
+        logsAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .logsAppearance)) ?? shared ?? d.logsAppearance
         terminalText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .terminalText)) ?? d.terminalText
         logsText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .logsText)) ?? d.logsText
+    }
+
+    /// Keys that older versions wrote and this one only reads.
+    private enum LegacyKeys: String, CodingKey {
+        case consoleAppearance
     }
 
     /// Docker socket override for a profile, if one is set and not blank.

@@ -80,11 +80,10 @@ public struct SettingsView: View {
     private var appearanceSection: some View {
         Section {
             appearancePicker("Interface", role: .interface)
-            appearancePicker("Logs and terminal", role: .console)
         } header: {
             Text("Appearance")
         } footer: {
-            Text("System follows macOS. Interface covers the menu, Settings, About and dialogs.")
+            Text("System follows macOS. Interface covers the menu, Settings, About and dialogs; terminal and logs have their own, below.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -220,10 +219,11 @@ public struct SettingsView: View {
         .pickerStyle(.segmented)
     }
 
-    /// Font, size, line height and a sample line for the terminal or the logs.
+    /// Appearance, font, size, line height and a sample line for the terminal or the logs.
     @ViewBuilder
     private func textStyleRows(for console: ConsoleKind) -> some View {
         let style = model.draft.textStyle(for: console)
+        appearancePicker("Appearance", role: .console(console))
         Picker("Font", selection: textStyleBinding(console, \.fontFamily)) {
             Text("System monospaced").tag(String?.none)
             if let family = style.fontFamily, !Self.fontFamilies.contains(family) {

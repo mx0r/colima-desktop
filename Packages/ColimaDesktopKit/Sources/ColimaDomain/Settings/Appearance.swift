@@ -21,8 +21,8 @@ public enum AppearanceMode: String, Codable, CaseIterable, Hashable, Sendable {
 public enum WindowRole: Hashable, Sendable {
     /// Menus, settings, About, alerts and update dialogs.
     case interface
-    /// Logs and terminal windows.
-    case console
+    /// Terminal or logs windows.
+    case console(ConsoleKind)
 }
 
 /// Window that shows container output in a text style of its own.
@@ -83,7 +83,8 @@ extension AppSettings {
     public func appearance(for role: WindowRole) -> AppearanceMode {
         switch role {
         case .interface: interfaceAppearance
-        case .console: consoleAppearance
+        case .console(.terminal): terminalAppearance
+        case .console(.logs): logsAppearance
         }
     }
 

@@ -76,11 +76,12 @@ locations prepended.
 open, the app switches to the `.regular` activation policy (Dock icon, ⌘-Tab). It goes back to `.accessory`
 when the last window closes.
 
-**Appearance.** Two settings: one for the interface, one for logs and terminal windows (consoles). Each is
-System, Light or Dark. `NSApp.appearance` is never set, so System always means the macOS setting, also for
-consoles while the interface is forced. `WindowManager` gives each window the appearance of its role:
+**Appearance.** Three settings: the interface, terminal windows and logs windows. Each is System, Light or
+Dark. `NSApp.appearance` is never set, so System always means the macOS setting, also while another group is
+forced. `WindowManager` gives each window the appearance of its role:
 
-- console windows, opened with `role: .console`, and their sheets get the console setting;
+- terminal and logs windows, opened with `role: .console(.terminal)` or `.console(.logs)`, and their sheets
+  get that setting;
 - every other window gets the interface setting: Settings, and windows it does not create (About, alerts,
   Sparkle) when they become key;
 - the status menu and its submenus, and the confirmation alerts, set the interface appearance themselves.

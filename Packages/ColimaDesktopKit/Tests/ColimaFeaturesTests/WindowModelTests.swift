@@ -245,9 +245,11 @@ struct SettingsViewModelTests {
         let harness = await StoreHarness().started()
         let sut = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), clock: ManualClock())
         sut.selectAppearance(.dark, for: .interface)
-        sut.selectAppearance(.light, for: .console)
+        sut.selectAppearance(.light, for: .console(.terminal))
+        sut.selectAppearance(.system, for: .console(.logs))
         #expect(harness.store.settings.interfaceAppearance == .dark)
-        #expect(harness.store.settings.consoleAppearance == .light)
+        #expect(harness.store.settings.terminalAppearance == .light)
+        #expect(harness.store.settings.logsAppearance == .system)
 
         let style = ConsoleTextStyle(fontFamily: "Menlo", fontSize: 14, lineHeight: 1.2)
         sut.setTextStyle(style, for: .terminal)

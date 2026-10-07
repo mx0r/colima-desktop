@@ -38,10 +38,11 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] The menu bar icon shows the state in every style (Settings → Menu bar icon). The choice applies at once.
       Check each style in a light and a dark menu bar. The status light style must switch its llama color when
       the menu bar changes between light and dark.
-- [ ] Settings → Appearance: Interface Dark with Logs and terminal System. The menu, Settings, About and
-      the Stop… alert are dark; open logs and terminal windows follow macOS and switch when macOS does.
-      Then Logs and terminal Light: they switch at once, the terminal text and background too. Each
-      setting on System follows macOS, including Auto.
+- [ ] Settings → Appearance → Interface Dark, with Terminal and Logs → Appearance on System. The menu,
+      Settings, About and the Stop… alert are dark; open logs and terminal windows follow macOS and switch
+      when macOS does. Then Terminal Light and Logs Dark: each switches at once and only its own windows,
+      the terminal text and background too. Each setting on System follows macOS, including Auto.
+- [ ] Upgrading from 0.7.0-beta.2 keeps its "Logs and terminal" appearance for both Terminal and Logs.
 - [ ] Settings → Terminal and Logs: font, size and line height change open windows at once. The
       terminal keeps working after a change (the TTY gets the new size). A font that was uninstalled shows
       "(not installed)" and the window uses the system monospaced font.

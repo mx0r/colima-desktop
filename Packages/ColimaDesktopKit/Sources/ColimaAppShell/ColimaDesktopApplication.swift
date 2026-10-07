@@ -49,12 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Keeps open windows in step with the appearance settings.
     private func observeAppearance(of store: AppStore) {
         let windows = windows
-        windows.setAppearance(interface: store.settings.interfaceAppearance, console: store.settings.consoleAppearance)
+        windows.setAppearance(from: store.settings)
         appearanceTask = Task { [weak store] in
             guard let store else { return }
-            let changes = Observations { (store.settings.interfaceAppearance, store.settings.consoleAppearance) }
-            for await (interface, console) in changes {
-                windows.setAppearance(interface: interface, console: console)
+            let changes = Observations {
+                (store.settings.interfaceAppearance, store.settings.terminalAppearance, store.settings.logsAppearance)
+            }
+            for await _ in changes {
+                windows.setAppearance(from: store.settings)
             }
         }
     }
