@@ -87,9 +87,13 @@ A release is a tag; the workflow does the rest. **In this order:**
    `https://mx0r.github.io/colima-desktop/appcast.xml` must list it too — that is what 0.7+
    installs read.
 
-**The release workflow commits `site/appcast.xml` to `main`** (the cumulative update feed). Pull
-before starting work after a release, and never edit the feed by hand: `scripts/merge-appcast.swift`
-maintains it (`--self-test` runs in CI).
+**The release workflow commits `site/appcast.xml` to `main`** (the cumulative update feed; the
+first release creates it). It exists only on `main`, never on feature or `release/x.y` branches —
+a copy there would conflict when the branch merges. Pull before starting work after a release, and
+never edit the feed by hand: `scripts/merge-appcast.swift` maintains it (`--self-test` runs in CI).
+
+Releases can be tagged on `main` or on a `release/x.y` integration branch (betas usually are): the
+publish job runs the tagged commit's scripts and release notes, and writes the feed on `main`.
 
 Build numbers are the commit count of `HEAD` (the release job checks out full history).
 

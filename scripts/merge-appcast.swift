@@ -6,7 +6,8 @@
 //        swift scripts/merge-appcast.swift --self-test
 //
 // An entry with the same build number is replaced (a re-run of a release); the newest N entries
-// per channel are kept (default 10); entries are written newest first.
+// per channel are kept (default 10); entries are written newest first. A feed file that does not
+// exist yet is created (the first release after the feed was introduced).
 
 import Foundation
 
@@ -74,6 +75,14 @@ func document(_ text: String) throws -> XMLDocument {
     try XMLDocument(xmlString: text, options: [.nodePreserveCDATA])
 }
 
+/// A feed without entries.
+func emptyFeed() throws -> XMLDocument {
+    try document("""
+    <?xml version="1.0" encoding="utf-8"?>
+    <rss version="2.0" xmlns:sparkle="\(sparkleNamespace)"><channel><title>Colima Desktop</title><link>https://github.com/mx0r/colima-desktop</link></channel></rss>
+    """)
+}
+
 // MARK: Self-test
 
 func feedXML(_ items: String) -> String {
@@ -118,6 +127,12 @@ func selfTest() throws {
     try check(text.contains("<![CDATA[- **0.7.1** highlights]]>"), "CDATA kept")
     try check(text.contains("sparkle:format=\"markdown\""), "release notes format kept")
 
+    // A feed that does not exist yet starts empty (the first release creates it).
+    let fresh = try emptyFeed()
+    try merge(feed: fresh, release: try document(feedXML(itemXML(20, "0.7.0-beta.1", channel: "beta"))), keepPerChannel: 10)
+    try check(try builds(fresh) == [20], "new feed holds the first release: \(try builds(fresh))")
+    try check(fresh.xmlString.contains("<title>Colima Desktop</title>"), "new feed has a title")
+
     // A release appcast without a build number is rejected.
     do {
         try merge(feed: feed, release: try document(feedXML("<item><title>x</title></item>")), keepPerChannel: 10)
@@ -139,7 +154,7 @@ do {
         throw MergeError.invalid("usage: merge-appcast.swift <feed.xml> <release-appcast.xml> [--keep N]")
     }
     let keep = arguments.count == 4 ? (Int(arguments[3]) ?? 10) : 10
-    let feed = try load(arguments[0])
+    let feed = FileManager.default.fileExists(atPath: arguments[0]) ? try load(arguments[0]) : try emptyFeed()
     try merge(feed: feed, release: try load(arguments[1]), keepPerChannel: keep)
     try feed.xmlData(options: [.nodePrettyPrint, .nodePreserveCDATA]).write(to: URL(fileURLWithPath: arguments[0]))
     let count = try channelElement(feed, "feed").elements(forName: "item").count

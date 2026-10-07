@@ -175,7 +175,9 @@ pull request.
 ### Updates (Sparkle)
 
 The app reads one cumulative feed, `https://mx0r.github.io/colima-desktop/appcast.xml`
-(`SUFeedURL`), served from `site/appcast.xml`. It holds the newest entries of both channels:
+(`SUFeedURL`), served from `site/appcast.xml` on `main` — the release workflow writes it (the
+first release creates it), so it exists on no other branch. It holds the newest entries of both
+channels:
 entries without `<sparkle:channel>` are stable, entries with `<sparkle:channel>beta</sparkle:channel>`
 are beta and only offered when Settings → Updates → Update channel is **Beta** (Sparkle's
 `allowedChannels(for:)`). Sparkle never downgrades: switching back to Stable keeps the installed
@@ -184,7 +186,8 @@ beta until a newer stable version is out.
 The release workflow keeps the feed: `scripts/make-appcast.sh` signs the DMG with the update
 signing key and writes a one-entry appcast (with `--channel beta` for betas), checking the
 signature against the public key inside the app; `scripts/merge-appcast.swift` merges it into
-`site/appcast.xml`, which the workflow commits to `main` before redeploying the site. Stable
+`site/appcast.xml` on `main`, which the workflow commits before redeploying the site — also for a
+tag on a `release/x.y` integration branch, whose own scripts and release notes it uses. Stable
 releases also attach their own `appcast.xml`: builds before 0.7 read
 `releases/latest/download/appcast.xml`, and GitHub's "latest" is the newest stable release.
 

@@ -110,10 +110,15 @@ jobs:
       VERSION: ${{ needs.build.outputs.version }}
 
     steps:
+      # The tagged commit: its scripts and release notes match the release, whichever branch
+      # (main or a release/x.y integration branch) the tag is on.
+      - uses: actions/checkout@v4
+
+      # The update feed lives on main, which Pages deploys.
       - uses: actions/checkout@v4
         with:
-          # The update feed is committed to main.
           ref: main
+          path: feed
 
       - uses: actions/download-artifact@v4
         with:
@@ -208,7 +213,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          swift scripts/merge-appcast.swift site/appcast.xml release/appcast.xml
+          # Creates the feed if main does not have it yet.
+          swift scripts/merge-appcast.swift feed/site/appcast.xml release/appcast.xml
+          cd feed
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add site/appcast.xml
