@@ -4,6 +4,22 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.8.0-beta.1</title>
+            <pubDate>Wed, 07 Oct 2026 19:07:03 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.1</sparkle:fullReleaseNotesLink>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>31</sparkle:version>
+            <sparkle:shortVersionString>0.8.0-beta.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **New Container…** in the menu: search Docker Hub, pick a tag, set the name, command, restart policy, ports, environment variables and volumes in a form, and create the container. A missing image is pulled with progress, and the logs and a terminal are one click away.
+- **Image sources** in Settings: Docker Hub for now. Images from other public registries work by name.
+
+[All changes in 0.8.0-beta.1 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.1)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.8.0-beta.1/ColimaDesktop-0.8.0-beta.1.dmg" length="6832089" type="application/octet-stream" sparkle:edSignature="feO0YQGR7UBqDHBscYqrqw8B/Fd0q2MSvzTmJRNkeKoKdY+bvLGVj8i9bXHMWaRqGZGk95R3SVBY2xOiVUoADA=="></enclosure>
+        </item>
+        <item>
             <title>0.7</title>
             <pubDate>Wed, 07 Oct 2026 10:50:43 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
