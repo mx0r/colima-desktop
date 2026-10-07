@@ -41,7 +41,7 @@ struct MenuModelBuilderTests {
         #expect(ids == [
             "status", MenuNodeID.information, "profiles", "sep.vm",
             "vm.start", "vm.stop", "vm.restart", "sep.containers",
-            "containers.empty", "containers.new", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
+            "containers.empty", "sep.new", "containers.new", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
         ])
     }
 
@@ -128,8 +128,13 @@ struct MenuModelBuilderTests {
 
     @Test("New Container… is offered while Docker is reachable, and only then")
     func newContainer() throws {
-        let item = try #require(node("containers.new", in: MenuModelBuilder.build(snapshot(), now: now)))
+        let nodes = MenuModelBuilder.build(snapshot(containers: [Sample.container("web")]), now: now)
+        let item = try #require(node("containers.new", in: nodes))
         #expect(item.title == "New Container…")
+        #expect(item.image == .symbol("plus.circle"))
+        // Set apart from the container list by a separator.
+        let index = try #require(nodes.firstIndex { $0.id == "containers.new" })
+        #expect(nodes[index - 1].kind == .separator)
         #expect(item.action == .newContainer)
         #expect(!MenuAction.newContainer.needsConfirmation)
         #expect(node("containers.new", in: MenuModelBuilder.build(snapshot(docker: .unreachable("refused")), now: now)) == nil)
@@ -147,7 +152,7 @@ struct MenuModelBuilderTests {
         let section = nodes.drop { $0.id != "sep.containers" }.dropFirst().prefix { $0.id != "sep.app" }
         #expect(section.map(\.id) == [
             "containers.header", "group.project:shop", containers[0].prefixID, containers[1].prefixID,
-            "group.standalone", containers[2].prefixID, "containers.new",
+            "group.standalone", containers[2].prefixID, "sep.new", "containers.new",
         ])
         #expect(section.first?.title == "Containers (2 of 3 running)")
 

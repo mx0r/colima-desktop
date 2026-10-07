@@ -222,9 +222,13 @@ public enum MenuModelBuilder {
         if let error = snapshot.containerActionError {
             nodes.append(MenuNode(id: "containers.error", title: "Last action failed", subtitle: error, image: .symbol("exclamationmark.triangle"), isEnabled: false))
         }
-        let newContainer = MenuNode(id: "containers.new", title: "New Container…", image: .symbol("plus"), action: .newContainer)
+        // Set apart below the list, so it does not read as one more container.
+        let newContainer: [MenuNode] = [
+            .separator("sep.new"),
+            MenuNode(id: "containers.new", title: "New Container…", image: .symbol("plus.circle"), action: .newContainer),
+        ]
         guard !snapshot.containers.isEmpty else {
-            return nodes + [.note("containers.empty", "No containers"), newContainer]
+            return nodes + [.note("containers.empty", "No containers")] + newContainer
         }
         let running = snapshot.containers.filter { $0.state == .running }.count
         nodes.append(.header("containers.header", "Containers (\(running) of \(snapshot.containers.count) running)"))
@@ -232,7 +236,7 @@ public enum MenuModelBuilder {
             nodes.append(.header("group.\(group.id)", group.project ?? "Other"))
             nodes += group.containers.map { containerNode($0, snapshot: snapshot, now: now) }
         }
-        return nodes + [newContainer]
+        return nodes + newContainer
     }
 
     static func containerNode(_ container: Container, snapshot: AppSnapshot, now: Date) -> MenuNode {
