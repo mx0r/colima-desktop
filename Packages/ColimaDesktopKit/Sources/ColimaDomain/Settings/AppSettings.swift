@@ -24,6 +24,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var selectedProfile: ProfileName?
     /// Look of the menu bar icon.
     public var menuBarIconStyle: MenuBarIconStyle
+    /// Which releases the updater offers.
+    public var updateChannel: UpdateChannel
 
     /// Settings with all values auto-detected.
     public static let defaults = AppSettings()
@@ -40,7 +42,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
         logBufferCapacity: Int = 50_000,
         notificationsEnabled: Bool = true,
         selectedProfile: ProfileName? = nil,
-        menuBarIconStyle: MenuBarIconStyle = .llamaCubes
+        menuBarIconStyle: MenuBarIconStyle = .llamaCubes,
+        updateChannel: UpdateChannel = .stable
     ) {
         self.colimaExecutablePath = colimaExecutablePath
         self.colimaHomePath = colimaHomePath
@@ -53,6 +56,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.notificationsEnabled = notificationsEnabled
         self.selectedProfile = selectedProfile
         self.menuBarIconStyle = menuBarIconStyle
+        self.updateChannel = updateChannel
     }
 
     // Tolerant decoding: missing keys fall back to defaults so stored settings survive app updates.
@@ -71,6 +75,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         selectedProfile = try c.decodeIfPresent(ProfileName.self, forKey: .selectedProfile)
         // A style from a newer version falls back to the default instead of failing the whole decode.
         menuBarIconStyle = (try? c.decodeIfPresent(MenuBarIconStyle.self, forKey: .menuBarIconStyle)) ?? d.menuBarIconStyle
+        updateChannel = (try? c.decodeIfPresent(UpdateChannel.self, forKey: .updateChannel)) ?? d.updateChannel
     }
 
     /// Docker socket override for a profile, if one is set and not blank.
@@ -79,6 +84,30 @@ public struct AppSettings: Codable, Hashable, Sendable {
             return nil
         }
         return path
+    }
+}
+
+/// Which releases the updater offers.
+public enum UpdateChannel: String, Codable, CaseIterable, Hashable, Sendable {
+    /// Stable releases only.
+    case stable
+    /// Stable and beta releases.
+    case beta
+
+    /// Name shown in Settings.
+    public var displayName: String {
+        switch self {
+        case .stable: "Stable"
+        case .beta: "Beta"
+        }
+    }
+
+    /// Sparkle channels allowed in addition to the default (stable) channel.
+    public var sparkleChannels: Set<String> {
+        switch self {
+        case .stable: []
+        case .beta: ["beta"]
+        }
     }
 }
 

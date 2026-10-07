@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Colima Desktop</title>
+        <link>https://github.com/mx0r/colima-desktop</link>
+        <item>
+            <title>0.6.1</title>
+            <pubDate>Tue, 06 Oct 2026 20:24:34 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.6.1</sparkle:fullReleaseNotesLink>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>0.6.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<p>Colima Desktop 0.6.1. <a href="https://github.com/mx0r/colima-desktop/releases/tag/v0.6.1">What changed</a>.</p>
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.6.1/ColimaDesktop-0.6.1.dmg" length="5973505" type="application/octet-stream" sparkle:edSignature="4gUl3E1hU2S94CVBhapwGViq5SxZmYtgD+ngbg1S7tMexPiId/Zs/PqlmwwwOc2dQp4ThLPNC+JhzMwHxySTBA=="></enclosure>
+        </item>
+    </channel>
+</rss>

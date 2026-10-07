@@ -139,6 +139,9 @@ public struct SettingsView: View {
             Toggle("Check for updates automatically", isOn: $model.automaticallyChecksForUpdates)
             Toggle("Download and install updates automatically", isOn: $model.automaticallyDownloadsUpdates)
                 .disabled(!model.canChangeAutomaticDownloads)
+            Picker("Update channel", selection: $model.draft.updateChannel) {
+                ForEach(UpdateChannel.allCases, id: \.self) { Text($0.displayName).tag($0) }
+            }
             HStack {
                 Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                     .foregroundStyle(.secondary)
@@ -148,7 +151,7 @@ public struct SettingsView: View {
         } header: {
             Text("Updates")
         } footer: {
-            Text("Downloaded updates install when Colima Desktop quits, or right away with Restart to Update in the menu.")
+            Text("Downloaded updates install when Colima Desktop quits, or right away with Restart to Update in the menu. Beta gets pre-release versions too; switching back to Stable keeps the installed beta until a newer stable version is out.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }

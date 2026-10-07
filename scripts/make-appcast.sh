@@ -2,7 +2,10 @@
 #
 # Signs a release DMG for Sparkle and writes appcast.xml next to it.
 #
-#   scripts/make-appcast.sh <path/to/ColimaDesktop-X.Y.dmg>
+#   scripts/make-appcast.sh [--channel beta] <path/to/ColimaDesktop-X.Y.dmg>
+#
+# --channel puts the entry on a Sparkle channel (beta builds); without it the entry is stable.
+# scripts/merge-appcast.swift then merges the result into the cumulative feed, site/appcast.xml.
 #
 # Sparkle's generate_appcast signs the DMG and reads version, build and minimum macOS from the app
 # inside it. The private key comes from SPARKLE_ED_PRIVATE_KEY (CI) or the login keychain (account
@@ -22,7 +25,13 @@ KEY_ACCOUNT="colima-desktop"
 
 fail() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 
-[[ $# -eq 1 && -f "$1" ]] || fail "usage: $0 <path/to/ColimaDesktop-X.Y.dmg>"
+CHANNEL=""
+if [[ "${1:-}" == "--channel" ]]; then
+  CHANNEL="${2:-}"
+  [[ "$CHANNEL" =~ ^[A-Za-z0-9._-]+$ ]] || fail "invalid channel name: $CHANNEL"
+  shift 2
+fi
+[[ $# -eq 1 && -f "$1" ]] || fail "usage: $0 [--channel beta] <path/to/ColimaDesktop-X.Y.dmg>"
 DMG="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 NAME=$(basename "$DMG")
 
@@ -67,6 +76,7 @@ ARGS=(
   --maximum-deltas 0
   -o "$WORK/appcast.xml"
 )
+[[ -n "$CHANNEL" ]] && ARGS+=(--channel "$CHANNEL")
 if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]]; then
   # Base64 has no whitespace; strip any newline the secret picked up on the way in.
   printf '%s' "${SPARKLE_ED_PRIVATE_KEY//[[:space:]]/}" \
@@ -92,4 +102,4 @@ cp "$APPCAST" "$(dirname "$DMG")/appcast.xml"
 # Nothing secret in either folder; trash them where trash exists (CI runners are discarded).
 if command -v trash >/dev/null 2>&1; then trash "$WORK" "$MOUNT"; fi
 
-echo "Appcast: $(dirname "$DMG")/appcast.xml ($VERSION)"
+echo "Appcast: $(dirname "$DMG")/appcast.xml ($VERSION${CHANNEL:+, channel $CHANNEL})"

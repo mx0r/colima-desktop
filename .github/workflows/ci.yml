@@ -59,5 +59,8 @@ jobs:
       - name: Unit tests
         run: make test
 
+      - name: Release tooling self-test
+        run: swift scripts/merge-appcast.swift --self-test
+
       - name: Build the app
         run: make build

@@ -50,8 +50,10 @@ targets:
         LSMinimumSystemVersion: "26.0"
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "© 2026 Miro Hudak"
-        # Sparkle: each release attaches its appcast.xml; GitHub redirects "latest" to the newest.
-        SUFeedURL: https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml
+        # Sparkle: the cumulative feed (stable + beta entries) on the site, kept by the release
+        # workflow. 0.6.x builds read releases/latest/download/appcast.xml, which stable releases
+        # keep attaching.
+        SUFeedURL: https://mx0r.github.io/colima-desktop/appcast.xml
         SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
         SUEnableAutomaticChecks: true
         # Default for "Download and install updates automatically"; the user's choice overrides it.

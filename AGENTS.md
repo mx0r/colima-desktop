@@ -70,14 +70,22 @@ A release is a tag; the workflow does the rest. **In this order:**
    the button and under the buttons. A tagged release with a stale page points everyone at the
    previous build. This is the step that gets forgotten. If the menu changed, update the menu
    illustrations on the page too.
-3. Commit, push, then `git tag vX.Y && git push origin vX.Y`.
+3. Commit, push, then `git tag vX.Y && git push origin vX.Y`. A beta is any version with a "-"
+   (`v0.8.0-beta.1`): it becomes a GitHub prerelease on Sparkle's beta channel, and step 2 does
+   not apply (the site keeps pointing at the newest stable release).
 4. Watch it: `gh run watch <id> -R mx0r/colima-desktop`. The **build** job tests, builds and
    packages without secrets; the **publish** job (environment `release`, `v*` tags only) signs the
    DMG for Sparkle, checks the signature against the app's public key and creates the release.
 5. Verify what shipped rather than assuming: download the DMG, `shasum -c` it, mount it, and read
    `CFBundleShortVersionString` out of the app. The release must carry `appcast.xml`, and
    `curl -sL https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml` must
-   show the new version — that is what installed copies read.
+   show the new version (stable) — that is what 0.6.x installs read. The feed
+   `https://mx0r.github.io/colima-desktop/appcast.xml` must list it too — that is what 0.7+
+   installs read.
+
+**The release workflow commits `site/appcast.xml` to `main`** (the cumulative update feed). Pull
+before starting work after a release, and never edit the feed by hand: `scripts/merge-appcast.swift`
+maintains it (`--self-test` runs in CI).
 
 Build numbers are the commit count of `HEAD` (the release job checks out full history).
 
@@ -139,6 +147,9 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
   persists a user choice and resets the schedule. `SparkleUpdater` reads and writes it directly.
 - **Debug builds have no updater** (`COLIMA_DESKTOP_UPDATES`): they share the bundle ID and
   Sparkle's settings with the published app and would be offered it as an update.
+- **Update channels are Sparkle channels.** Entries tagged `<sparkle:channel>beta</sparkle:channel>`
+  are offered only when the user picks Beta (`allowedChannels(for:)` reads the setting at every
+  check). Sparkle never downgrades when switching back to Stable.
 - **Background installs keep Sparkle's install-now handler** (`willInstallUpdateOnQuit`, returning
   `true`): that stalls Sparkle's update cycle until the app relaunches, and Sparkle still installs
   on quit. The menu shows "Restart to Update to X" from `readyToInstallVersion`.

@@ -65,6 +65,8 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] With an older release installed and both update switches on, the background check
       downloads the update silently and the menu shows "Restart to Update to X"; choosing it
       installs and relaunches. Quitting instead installs it, and the next launch is the new version.
+- [ ] Update channel: on Stable, a published beta is not offered; switching to Beta offers it at
+      the next check (or Check Now); switching back to Stable keeps the beta installed.
 - [ ] Settings → Updates: "Download and install updates automatically" is greyed out while
       automatic checks are off; both switches survive a relaunch.
 - [ ] Quit closes the app and its windows.

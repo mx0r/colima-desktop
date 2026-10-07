@@ -86,6 +86,16 @@ struct DomainModelTests {
         #expect(stored.menuBarIconStyle == .llamaDot)
     }
 
+    @Test("Update channel defaults to stable, survives unknown values, and maps to Sparkle channels")
+    func updateChannel() throws {
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8)).updateChannel == .stable)
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data(#"{"updateChannel": "nightly"}"#.utf8)).updateChannel == .stable)
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data(#"{"updateChannel": "beta"}"#.utf8)).updateChannel == .beta)
+        #expect(UpdateChannel.stable.sparkleChannels.isEmpty)
+        #expect(UpdateChannel.beta.sparkleChannels == ["beta"])
+        #expect(UpdateChannel.allCases == [.stable, .beta])
+    }
+
     @Test("Every icon style has a name")
     func iconStyleNames() {
         #expect(MenuBarIconStyle.allCases == [.container, .llamaCubes, .llamaDot, .llamaSymbols])
@@ -94,7 +104,7 @@ struct DomainModelTests {
 
     @Test("Settings round-trip through JSON")
     func settingsRoundTrip() throws {
-        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols)
+        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols, updateChannel: .beta)
         let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(original))
         #expect(decoded == original)
     }

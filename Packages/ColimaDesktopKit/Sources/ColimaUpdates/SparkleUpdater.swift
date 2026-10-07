@@ -31,10 +31,16 @@ public final class SparkleUpdater: NSObject, UpdateControlling, SPUUpdaterDelega
     @ObservationIgnored private var controller: SPUStandardUpdaterController!
     /// Installs the downloaded update and relaunches; handed over by Sparkle.
     @ObservationIgnored private var installNow: (() -> Void)?
+    /// Sparkle channels the user opted into, asked at every check.
+    @ObservationIgnored private let allowedChannels: () -> Set<String>
     private var reminders = UpdateReminderState()
 
     /// Creates and starts the updater.
-    override public init() {
+    ///
+    /// - Parameter allowedChannels: Channels besides the default one (e.g. `["beta"]`), read at
+    ///   every check so a changed setting applies to the next check.
+    public init(allowedChannels: @escaping () -> Set<String> = { [] }) {
+        self.allowedChannels = allowedChannels
         super.init()
         controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: self)
     }
@@ -94,6 +100,11 @@ public final class SparkleUpdater: NSObject, UpdateControlling, SPUUpdaterDelega
     }
 
     // MARK: SPUUpdaterDelegate
+
+    /// Channels to look in besides the default one; empty for stable only.
+    public func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        allowedChannels()
+    }
 
     /// A silently downloaded update waits for the app to quit. Taking the handler lets the menu
     /// offer "Restart to Update" now; Sparkle still installs on quit if the user never chooses it.
