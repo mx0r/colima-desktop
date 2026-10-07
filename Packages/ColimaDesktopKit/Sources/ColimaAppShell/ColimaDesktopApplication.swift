@@ -6,8 +6,10 @@ import ColimaUpdates
 
 /// Entry point of the app bundle.
 public enum ColimaDesktopApplication {
-    /// Starts the menu bar app. Does not return.
+    /// Starts the menu bar app. Does not return, except when another copy already runs: then this
+    /// copy asks it to open its menu and returns at once, which ends the process.
     public static func run() {
+        if SingleInstance.yieldToRunningCopy() { return }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -42,6 +44,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.store = store
         self.router = router
         MainMenu.router = router
+        // Selector-based, so it is delivered from the run loop and not as a main-queue job.
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(anotherCopyLaunched),
+            name: SingleInstance.anotherCopyLaunched,
+            object: nil
+        )
         observeAppearance(of: store)
         store.start()
     }
@@ -67,6 +76,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    /// Opening the app again (Finder, Spotlight) while no window is open shows the menu.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { statusItem?.showMenu() }
+        return true
+    }
+
+    /// Another copy was started and quit; show where this one is.
+    @objc private func anotherCopyLaunched(_ notification: Notification) {
+        statusItem?.showMenu()
     }
 }
 

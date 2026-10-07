@@ -46,6 +46,8 @@ socket, so the docker CLI is not needed.
   Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
+- **One copy at a time**: starting the app while it runs (another build, another folder, or a
+  manual start next to the launch at login) opens the running copy's menu, and the new copy quits.
 - **Settings**: menu bar icon style, appearance, image sources, launch at login, updates,
   notifications, refresh interval, terminal shell, log sizes, and overrides for everything
   detected automatically.

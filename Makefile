@@ -38,6 +38,8 @@ run: build stop
 
 stop:
 	@pkill -x ColimaDesktop 2>/dev/null || true
+	@# Wait until it has exited: a new copy quits while an older one still runs (SingleInstance).
+	@for i in $$(seq 50); do pgrep -x ColimaDesktop >/dev/null || break; sleep 0.1; done
 
 ## Copy to /Applications and run from there. Launch at login registers the bundle path,
 ## so it should point at this copy rather than one in .build/ that the next build replaces.
