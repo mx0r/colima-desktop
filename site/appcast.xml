@@ -4,6 +4,23 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.7</title>
+            <pubDate>Wed, 07 Oct 2026 10:50:43 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.7</sparkle:fullReleaseNotesLink>
+            <sparkle:version>23</sparkle:version>
+            <sparkle:shortVersionString>0.7</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **Updates install themselves.** New versions download in the background and install when Colima Desktop quits — or right away with **Restart to Update** in the menu. Switch it off in Settings → Updates.
+- **Beta channel.** Settings → Updates → Update channel: **Beta** also offers pre-release versions.
+- **Light, dark or System, three times.** Settings sets the appearance of the interface, the terminal and the logs apart, so the terminal can stay dark while the rest follows macOS.
+- **Console fonts.** Pick the font, size and line height for the terminal and for the logs. Open windows change at once.
+
+[All changes in 0.7 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.7)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.7/ColimaDesktop-0.7.dmg" length="6039495" type="application/octet-stream" sparkle:edSignature="TixSfq6M/xNsAF2INbv23kCNHonTbBZsRIPpTzdFUfvrddtdfm6FmbLAQ0jDjoj4c8qIYAtvx0Yd94C3xJJzCQ=="></enclosure>
+        </item>
+        <item>
             <title>0.7.0-beta.3</title>
             <pubDate>Wed, 07 Oct 2026 10:07:15 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
