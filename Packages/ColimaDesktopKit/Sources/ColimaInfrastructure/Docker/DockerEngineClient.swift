@@ -95,6 +95,13 @@ public final class DockerEngineClient: DockerEngine {
         try await getJSON(DockerAPI.ContainerInspect.self, "/containers/\(escape(containerID))/json").domain
     }
 
+    public func searchImages(term: String, limit: Int) async throws -> [ImageSearchResult] {
+        let response = try await http.send(HTTPRequest(method: "GET", target: path("/images/search?term=\(queryValue(term))&limit=\(limit)")))
+        try check(response, allowed: [200])
+        // Plain decoder: these keys are snake_case.
+        return try JSONDecoder().decode([DockerAPI.SearchResult].self, from: Data(response.body)).compactMap(\.domain)
+    }
+
     // MARK: Actions
 
     public func perform(_ action: ContainerAction, containerID: String) async throws {
@@ -111,7 +118,52 @@ public final class DockerEngineClient: DockerEngine {
         try check(response, allowed: [200, 204, 304])
     }
 
+    public func createContainer(_ spec: ContainerSpec) async throws -> CreatedContainer {
+        let query = spec.name.map { "?name=\(queryValue($0))" } ?? ""
+        let response = try await postJSON("/containers/create\(query)", body: DockerAPI.ContainerCreateBody(spec))
+        try check(response, allowed: [201])
+        let created = try DockerJSON.decode(DockerAPI.ContainerCreateResponse.self, from: response.body, endpoint: "container create")
+        return CreatedContainer(id: created.id, warnings: created.warnings ?? [])
+    }
+
     // MARK: Streams
+
+    public func pullImage(_ reference: ImageReference) -> AsyncThrowingStream<PullMessage, Error> {
+        let parameters = reference.pullParameters
+        let target = path("/images/create?fromImage=\(queryValue(parameters.fromImage))&tag=\(queryValue(parameters.tag))")
+        let request = HTTPRequest(method: "POST", target: target)
+        let http = http
+
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let response = try await http.stream(request)
+                    guard response.head.status == 200 else {
+                        var body: [UInt8] = []
+                        for try await bytes in response.body { body += bytes }
+                        throw DockerError.api(status: response.head.status, message: DockerErrorBody.message(from: body))
+                    }
+                    var decoder = PullMessageDecoder()
+                    // An error arrives as a message once the pull has started.
+                    func deliver(_ messages: [PullMessage]) throws {
+                        for message in messages {
+                            if let error = message.error { throw DockerError.pullFailed(error) }
+                            continuation.yield(message)
+                        }
+                    }
+                    for try await bytes in response.body {
+                        try deliver(decoder.feed(bytes))
+                    }
+                    try deliver(decoder.flush())
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            // Closing the connection cancels the pull in the engine.
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 
     public func logs(containerID: String, options: LogOptions) -> AsyncThrowingStream<[LogLine], Error> {
         var query = "follow=\(options.follow ? 1 : 0)&stdout=1&stderr=1&timestamps=1"
@@ -267,6 +319,11 @@ public final class DockerEngineClient: DockerEngine {
         if contentType.contains("raw-stream") { return false }
         // Engines before API 1.42 send no stream content type; TTY containers are not multiplexed.
         return try await !inspect(containerID: containerID).tty
+    }
+
+    /// Percent-encodes a query value; `+`, `&` and `=` must not reach the engine raw.
+    private func queryValue(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~/:@"))) ?? value
     }
 
     private func escape(_ component: String) -> String {

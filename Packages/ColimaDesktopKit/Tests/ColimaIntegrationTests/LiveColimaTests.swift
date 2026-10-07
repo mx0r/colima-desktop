@@ -5,7 +5,8 @@ import Testing
 @testable import ColimaInfrastructure
 
 /// Runs against the colima and Docker on this machine. Enable with `COLIMA_DESKTOP_IT=1`.
-/// Requires the default profile to be running with the Docker runtime. Read-only except for a short exec.
+/// Requires the default profile to be running with the Docker runtime. Read-only except for a short
+/// exec and a throwaway hello-world container (pulled if missing, removed at the end).
 private let enabled = ProcessInfo.processInfo.environment["COLIMA_DESKTOP_IT"] == "1"
 
 @Suite("Live colima and Docker", .enabled(if: enabled), .serialized)
@@ -123,5 +124,38 @@ struct LiveColimaTests {
         for container in snapshot.containers {
             #expect(text.contains(container.name))
         }
+    }
+
+    @Test("Search, Docker Hub tags, pull, create, start and remove a hello-world container")
+    func newContainer() async throws {
+        let engine = try await docker()
+        try await engine.verifyCompatibility()
+        let catalog = DockerHubCatalog(engine: engine)
+        let results = try await catalog.search("hello-world", limit: 5)
+        #expect(results.first?.name == "hello-world")
+        let reference = try #require(ImageReference("hello-world"))
+        let tags = try #require(try await catalog.tags(of: reference))
+        #expect(tags.contains { $0.name == "latest" })
+
+        var progress = PullProgress()
+        for try await message in engine.pullImage(reference) { progress.apply(message) }
+        #expect(progress.error == nil)
+        #expect(progress.status?.hasPrefix("Status:") == true)
+
+        let name = "colima-desktop-it-\(UUID().uuidString.prefix(8).lowercased())"
+        let created = try await engine.createContainer(ContainerSpec(image: reference, name: name, environment: [EnvironmentVariable(name: "IT", value: "1")]))
+        do {
+            #expect(try await engine.inspect(containerID: created.id).name == name)
+            try await engine.perform(.start, containerID: created.id)
+            // hello-world prints and exits; wait for that before removing it.
+            for _ in 0..<40 where try await engine.inspect(containerID: created.id).state.isAlive {
+                try await Task.sleep(for: .milliseconds(250))
+            }
+        } catch {
+            try? await engine.perform(.stop, containerID: created.id)
+            try? await engine.perform(.remove, containerID: created.id)
+            throw error
+        }
+        try await engine.perform(.remove, containerID: created.id)
     }
 }

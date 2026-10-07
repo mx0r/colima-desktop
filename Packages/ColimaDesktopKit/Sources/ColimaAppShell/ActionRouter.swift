@@ -44,6 +44,8 @@ final class ActionRouter {
             NSWorkspace.shared.open(url)
         case .container(let containerAction, let containerID, _):
             store.performContainerAction(containerAction, containerID: containerID)
+        case .newContainer:
+            showNewContainer()
         case .showSettings:
             showSettings()
         case .showAbout:
@@ -96,6 +98,31 @@ final class ActionRouter {
             role: .console(.terminal),
             onClose: { model.close() },
             content: { [store] in TerminalWindowView(model: model, textStyle: { store.settings.terminalText }) }
+        )
+    }
+
+    private func showNewContainer() {
+        guard let engine = store.dockerEngine else { return showDockerUnavailable() }
+        guard !windows.focus("new-container") else { return }
+        let catalogs: [any ImageCatalog] = store.settings.enabledImageSources.map { kind in
+            switch kind {
+            case .dockerHub: DockerHubCatalog(engine: engine)
+            }
+        }
+        let model = NewContainerViewModel(
+            engine: engine,
+            catalogs: catalogs,
+            vmArchitecture: store.snapshot.details?.arch ?? store.snapshot.selectedInstance?.arch,
+            onAction: { [weak self] action in self?.handle(action) }
+        )
+        windows.show(
+            id: "new-container",
+            title: "New Container",
+            size: NSSize(width: 980, height: 700),
+            autosaveName: "NewContainerWindow",
+            minSize: NSSize(width: 760, height: 520),
+            onClose: { model.close() },
+            content: { NewContainerWindowView(model: model) }
         )
     }
 

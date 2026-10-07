@@ -37,6 +37,8 @@ public enum DockerError: Error, LocalizedError, Hashable, Sendable {
     case invalidResponse(String)
     /// The connection closed before the response was complete.
     case connectionClosed
+    /// An image pull failed after it started; Docker reports this inside a successful response.
+    case pullFailed(String)
 
     public var errorDescription: String? {
         switch self {
@@ -50,6 +52,23 @@ public enum DockerError: Error, LocalizedError, Hashable, Sendable {
             "Unexpected response from Docker: \(detail)"
         case .connectionClosed:
             "The Docker connection closed unexpectedly."
+        case .pullFailed(let message):
+            "The image could not be pulled: \(message)"
+        }
+    }
+}
+
+/// Errors of an image catalog (search and tags).
+public enum ImageCatalogError: Error, LocalizedError, Hashable, Sendable {
+    /// The source refuses more requests for now.
+    case rateLimited
+    /// The source failed or answered with something unexpected.
+    case unavailable(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .rateLimited: "Docker Hub limits how often it can be asked. Try again in a few minutes."
+        case .unavailable(let detail): detail
         }
     }
 }

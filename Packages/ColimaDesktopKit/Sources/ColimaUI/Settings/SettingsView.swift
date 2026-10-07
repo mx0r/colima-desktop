@@ -17,6 +17,7 @@ public struct SettingsView: View {
             appearanceSection
             colimaSection
             socketSection
+            imageSourcesSection
             generalSection
             if model.hasUpdater { updatesSection }
             terminalSection
@@ -107,6 +108,20 @@ public struct SettingsView: View {
             Text("Docker socket per profile")
         } footer: {
             Text("Leave empty to use the socket colima reports.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var imageSourcesSection: some View {
+        Section {
+            ForEach($model.draft.imageSources, id: \.kind) { $source in
+                Toggle(source.kind.displayName, isOn: $source.isEnabled)
+            }
+        } header: {
+            Text("Image sources")
+        } footer: {
+            Text("New Container… searches these. Images from other public registries work by name, for example ghcr.io/owner/app. Private registries are not supported yet.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
