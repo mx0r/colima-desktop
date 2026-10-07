@@ -4,6 +4,23 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.8.0-beta.2</title>
+            <pubDate>Wed, 07 Oct 2026 19:44:59 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.2</sparkle:fullReleaseNotesLink>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>36</sparkle:version>
+            <sparkle:shortVersionString>0.8.0-beta.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **One copy at a time.** Starting the app again while it runs opens its menu instead of adding a second icon to the menu bar.
+- **Exact durations.** Uptime and other durations show their two largest units, such as 2d 4h, 3h 12m, 5m 30s or 42s, and count up while the menu is open.
+- **Tidier container menus.** A container with more than one port lists its ports in a Ports submenu, and more than six containers go into a Containers submenu.
+
+[All changes in 0.8.0-beta.2 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.2)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.8.0-beta.2/ColimaDesktop-0.8.0-beta.2.dmg" length="6895684" type="application/octet-stream" sparkle:edSignature="t+paLB3peAN7m2EbciHPJbTvZcOjeX9+JxQHs8DoC9ap1k7QjCGiFGk1WjyqHTAWXAyFrL6HTgjCZqnbaxbIBQ=="></enclosure>
+        </item>
+        <item>
             <title>0.8.0-beta.1</title>
             <pubDate>Wed, 07 Oct 2026 19:07:03 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
