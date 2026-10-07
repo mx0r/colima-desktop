@@ -24,6 +24,7 @@ Swift Testing, one target per layer:
   - `AppStore` with fakes and a `ManualClock`: refresh tiers, debouncing, profile switches, stale-result
     dropping, operations, notifications.
   - Menu model scenarios.
+  - Which copy keeps running when several start (`SingleInstancePolicy`).
   - Logs, terminal and settings view models.
   - The New Container form's validation and its view model (debounced search, tags, pull on 404, always
     pull, start failure, cancel).
@@ -66,6 +67,8 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] An image from another registry by name (for example `ghcr.io/…`) creates without a tag list.
       Settings → Image sources → Docker Hub off: the window says no source is on, and typing a name still
       works.
+- [ ] One copy: with the app running, open it again from Finder, and open another copy (a Debug build, or
+      `open -n`). No second icon appears, and the running copy opens its menu.
 - [ ] `colima stop` / `colima start` in a shell updates the icon without opening the menu.
 - [ ] With the menu open, `docker run --rm -d nginx` in a shell adds the container to the open menu, and an
       open container submenu stays open.

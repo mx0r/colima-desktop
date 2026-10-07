@@ -70,6 +70,14 @@ output cannot deadlock it. It terminates the process on cancellation and timeout
 GUI apps start with a minimal `PATH`. The child `PATH` gets the colima directory and the usual install
 locations prepended.
 
+## Launch
+
+`ColimaDesktopApplication.run()` first checks for another running copy with the same bundle ID
+(`NSRunningApplication`). `SingleInstancePolicy` keeps the oldest copy: a newer one posts a distributed
+notification and returns before `NSApplication.run()`, so it never shows an icon. The running copy opens its
+menu when it gets the notification, and on a reopen (Finder, Spotlight) while no window is open. The menu is
+opened from the run loop (`perform(_:with:afterDelay:)`), never from a main-queue job.
+
 ## Windows
 
 `WindowManager` hosts SwiftUI views in `NSWindow`s and remembers frames per window kind. While any window is
