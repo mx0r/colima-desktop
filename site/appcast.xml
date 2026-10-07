@@ -4,6 +4,21 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.7.0-beta.3</title>
+            <pubDate>Wed, 07 Oct 2026 10:07:15 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.7.0-beta.3</sparkle:fullReleaseNotesLink>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>22</sparkle:version>
+            <sparkle:shortVersionString>0.7.0-beta.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **Terminal and logs each get their own appearance.** Settings → Terminal and Settings → Logs each have an Appearance row (System, Light or Dark); Interface stays under Settings → Appearance. The shared setting from beta.2 carries over to both.
+
+[All changes in 0.7.0-beta.3 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.7.0-beta.3)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.7.0-beta.3/ColimaDesktop-0.7.0-beta.3.dmg" length="6039511" type="application/octet-stream" sparkle:edSignature="xN0TbtpIOuIrg9BQqMZ/6C4Dh6rkUMLdhk/mF/eOaUbvOwEAjRM92tG511wbIlJkuqPoTl/UUkxu9ptg9oPyBg=="></enclosure>
+        </item>
+        <item>
             <title>0.7.0-beta.2</title>
             <pubDate>Wed, 07 Oct 2026 08:58:18 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
