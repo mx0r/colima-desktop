@@ -144,6 +144,11 @@ git tag v0.8.0-beta.1 && git push origin v0.8.0-beta.1   # beta: any version wit
 A beta is published as a GitHub prerelease and goes into the feed on the beta channel; it does
 not change the site's download link.
 
+Every release needs `release-notes/<version>.md` with its most important changes, in Markdown.
+Sparkle embeds it in the update dialog, followed by a link to the full release, and it heads the
+GitHub release above GitHub's generated change list. The workflow fails a tagged release without
+it.
+
 `.github/workflows/release.yml` has two jobs:
 
 - **build** runs the same `scripts/build-release.sh` on a macOS runner: tests, Release build, ad-hoc

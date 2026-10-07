@@ -86,7 +86,7 @@ func feedXML(_ items: String) -> String {
 func itemXML(_ build: Int, _ version: String, channel: String? = nil) -> String {
     let channelTag = channel.map { "<sparkle:channel>\($0)</sparkle:channel>" } ?? ""
     return "<item><title>\(version)</title><sparkle:version>\(build)</sparkle:version>\(channelTag)"
-        + "<description><![CDATA[<p>\(version)</p>]]></description></item>"
+        + "<description sparkle:format=\"markdown\"><![CDATA[- **\(version)** highlights]]></description></item>"
 }
 
 func selfTest() throws {
@@ -112,10 +112,11 @@ func selfTest() throws {
     }
     try check(try builds(feed) == [17, 16, 15], "two stable kept, beta kept: \(try builds(feed))")
 
-    // The channel tag and CDATA release notes survive the round trip.
+    // The channel tag and the Markdown release notes survive the round trip.
     let text = feed.xmlString
     try check(text.contains("<sparkle:channel>beta</sparkle:channel>"), "channel tag kept")
-    try check(text.contains("<![CDATA[<p>0.7.1</p>]]>"), "CDATA kept")
+    try check(text.contains("<![CDATA[- **0.7.1** highlights]]>"), "CDATA kept")
+    try check(text.contains("sparkle:format=\"markdown\""), "release notes format kept")
 
     // A release appcast without a build number is rejected.
     do {

@@ -65,18 +65,22 @@ A release is a tag; the workflow does the rest. **In this order:**
 
 1. Bump `MARKETING_VERSION` in `project.yml`. The tag overrides it anyway, but local builds should
    not keep calling themselves the old version.
-2. **Update `site/index.html`** — the download button hardcodes the DMG URL
+2. **Write `release-notes/X.Y.md`**: the most important changes, user-facing, a few Markdown
+   bullets. Sparkle embeds it in the update dialog (followed by a link to the full release), and
+   it heads the GitHub release above GitHub's generated change list. Never just a link: a tagged
+   release without this file fails.
+3. **Update `site/index.html`** — the download button hardcodes the DMG URL
    (`…/releases/download/vX.Y/ColimaDesktop-X.Y.dmg`), and the version appears in the eyebrow line,
    the button and under the buttons. A tagged release with a stale page points everyone at the
    previous build. This is the step that gets forgotten. If the menu changed, update the menu
    illustrations on the page too.
-3. Commit, push, then `git tag vX.Y && git push origin vX.Y`. A beta is any version with a "-"
-   (`v0.8.0-beta.1`): it becomes a GitHub prerelease on Sparkle's beta channel, and step 2 does
+4. Commit, push, then `git tag vX.Y && git push origin vX.Y`. A beta is any version with a "-"
+   (`v0.8.0-beta.1`): it becomes a GitHub prerelease on Sparkle's beta channel, and step 3 does
    not apply (the site keeps pointing at the newest stable release).
-4. Watch it: `gh run watch <id> -R mx0r/colima-desktop`. The **build** job tests, builds and
+5. Watch it: `gh run watch <id> -R mx0r/colima-desktop`. The **build** job tests, builds and
    packages without secrets; the **publish** job (environment `release`, `v*` tags only) signs the
    DMG for Sparkle, checks the signature against the app's public key and creates the release.
-5. Verify what shipped rather than assuming: download the DMG, `shasum -c` it, mount it, and read
+6. Verify what shipped rather than assuming: download the DMG, `shasum -c` it, mount it, and read
    `CFBundleShortVersionString` out of the app. The release must carry `appcast.xml`, and
    `curl -sL https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml` must
    show the new version (stable) — that is what 0.6.x installs read. The feed

@@ -13,9 +13,15 @@
 # SUPublicEDKey of the app inside the DMG — what installed copies check — so a key mismatch fails
 # here instead of on every user's machine.
 #
+# Release notes: release-notes/<version>.md (the most important changes, Markdown) is embedded in
+# the entry, so Sparkle's update dialog shows it, followed by a link to the full release on GitHub.
+#
 # Environment:
-#   SPARKLE_BIN   Directory with Sparkle's tools. CI passes the release archive it verified by
-#                 checksum; locally the package's artifact is used.
+#   SPARKLE_BIN            Directory with Sparkle's tools. CI passes the release archive it verified
+#                          by checksum; locally the package's artifact is used.
+#   REQUIRE_RELEASE_NOTES  1 to fail when release-notes/<version>.md is missing (tagged releases).
+#                          Otherwise a missing file falls back to a plain link, with a warning.
+#   RELEASE_NOTES_DIR      Where to look for <version>.md (default: release-notes/).
 #
 set -euo pipefail
 
@@ -64,9 +70,19 @@ TAG="v$VERSION"
 # generate_appcast works on a folder: this release and its release note, nothing else.
 WORK=$(mktemp -d)
 cp "$DMG" "$WORK/"
-cat > "$WORK/${NAME%.dmg}.html" <<HTML
-<p>Colima Desktop $VERSION. <a href="https://github.com/$OWNER_REPO/releases/tag/$TAG">What changed</a>.</p>
+RELEASE_URL="https://github.com/$OWNER_REPO/releases/tag/$TAG"
+NOTES="${RELEASE_NOTES_DIR:-$REPO/release-notes}/$VERSION.md"
+if [[ -f "$NOTES" ]]; then
+  # The highlights, then the way to everything else.
+  { cat "$NOTES"; printf '\n[All changes in %s on GitHub](%s)\n' "$VERSION" "$RELEASE_URL"; } > "$WORK/${NAME%.dmg}.md"
+elif [[ "${REQUIRE_RELEASE_NOTES:-}" == "1" ]]; then
+  fail "missing $NOTES — write the most important changes of $VERSION there"
+else
+  printf '\033[1;33mWarning:\033[0m no %s; the update shows only a link\n' "$NOTES" >&2
+  cat > "$WORK/${NAME%.dmg}.html" <<HTML
+<p>Colima Desktop $VERSION. <a href="$RELEASE_URL">What changed</a>.</p>
 HTML
+fi
 
 ARGS=(
   --download-url-prefix "https://github.com/$OWNER_REPO/releases/download/$TAG/"
