@@ -135,14 +135,22 @@ public struct SettingsView: View {
     }
 
     private var updatesSection: some View {
-        Section("Updates") {
+        Section {
             Toggle("Check for updates automatically", isOn: $model.automaticallyChecksForUpdates)
+            Toggle("Download and install updates automatically", isOn: $model.automaticallyDownloadsUpdates)
+                .disabled(!model.canChangeAutomaticDownloads)
             HStack {
                 Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("Check Now") { model.checkForUpdates() }
             }
+        } header: {
+            Text("Updates")
+        } footer: {
+            Text("Downloaded updates install when Colima Desktop quits, or right away with Restart to Update in the menu.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 

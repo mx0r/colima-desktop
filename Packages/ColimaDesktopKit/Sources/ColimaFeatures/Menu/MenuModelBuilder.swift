@@ -23,7 +23,8 @@ public enum MenuModelBuilder {
         return nodes
     }
 
-    /// "Check for Updates…", "Update to X…" once a background check found one, or nothing.
+    /// "Check for Updates…", "Update to X…" once a background check found one, "Restart to Update
+    /// to X" once one is downloaded, or nothing without an updater.
     static func updateNode(_ item: UpdatesMenuItem) -> MenuNode? {
         switch item {
         case .hidden:
@@ -32,6 +33,8 @@ public enum MenuModelBuilder {
             MenuNode(id: "updates", title: "Check for Updates…", action: .checkForUpdates)
         case .pending(let version):
             MenuNode(id: "updates", title: "Update to \(version)…", image: .symbol("arrow.down.circle.fill"), action: .checkForUpdates)
+        case .readyToInstall(let version):
+            MenuNode(id: "updates", title: "Restart to Update to \(version)", image: .symbol("arrow.down.circle.fill"), action: .installUpdate)
         }
     }
 

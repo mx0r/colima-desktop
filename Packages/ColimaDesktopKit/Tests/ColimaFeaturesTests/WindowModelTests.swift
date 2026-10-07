@@ -252,6 +252,13 @@ struct SettingsViewModelTests {
         sut.checkForUpdates()
         #expect(updater.checkCount == 1)
 
+        #expect(sut.automaticallyDownloadsUpdates)
+        #expect(sut.canChangeAutomaticDownloads)
+        sut.automaticallyDownloadsUpdates = false
+        #expect(!updater.automaticallyDownloadsUpdates)
+        updater.allowsAutomaticUpdates = false
+        #expect(!sut.canChangeAutomaticDownloads)
+
         let without = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), clock: ManualClock())
         #expect(!without.hasUpdater)
     }

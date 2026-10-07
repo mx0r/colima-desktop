@@ -27,6 +27,18 @@ struct UpdateReminderTests {
         #expect(state.pendingVersion == nil)
     }
 
+    @Test("A silently downloaded update is ready to install until the app relaunches")
+    func readyToInstall() {
+        var state = UpdateReminderState()
+        state.willShowUpdate(version: "0.7", handledBySparkle: false)
+        state.updateReadyToInstall(version: "0.7")
+        #expect(state.readyVersion == "0.7")
+        // The pending reminder is superseded: the update is already downloaded.
+        #expect(state.pendingVersion == nil)
+        state.sessionFinished()
+        #expect(state.readyVersion == "0.7")
+    }
+
     @Test("Updates run only when the build enables them")
     func enabledFlag() {
         // Info.plist build-setting substitution yields strings; a literal plist value is a Bool.

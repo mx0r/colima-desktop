@@ -139,6 +139,9 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
   persists a user choice and resets the schedule. `SparkleUpdater` reads and writes it directly.
 - **Debug builds have no updater** (`COLIMA_DESKTOP_UPDATES`): they share the bundle ID and
   Sparkle's settings with the published app and would be offered it as an update.
+- **Background installs keep Sparkle's install-now handler** (`willInstallUpdateOnQuit`, returning
+  `true`): that stalls Sparkle's update cycle until the app relaunches, and Sparkle still installs
+  on quit. The menu shows "Restart to Update to X" from `readyToInstallVersion`.
 - **Read plists with `plutil -extract … raw`, not `defaults read`**, which can answer from a cache.
 
 ## Verifying changes

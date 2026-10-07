@@ -62,5 +62,9 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] With an older release installed and automatic checks on, the menu shows "Update to X…"
       after the background check — also right after launch at login — and no window opens by
       itself.
-- [ ] Settings → Updates: the switch survives a relaunch.
+- [ ] With an older release installed and both update switches on, the background check
+      downloads the update silently and the menu shows "Restart to Update to X"; choosing it
+      installs and relaunches. Quitting instead installs it, and the next launch is the new version.
+- [ ] Settings → Updates: "Download and install updates automatically" is greyed out while
+      automatic checks are off; both switches survive a relaunch.
 - [ ] Quit closes the app and its windows.

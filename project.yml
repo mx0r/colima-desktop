@@ -54,6 +54,8 @@ targets:
         SUFeedURL: https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml
         SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
         SUEnableAutomaticChecks: true
+        # Default for "Download and install updates automatically"; the user's choice overrides it.
+        SUAutomaticallyUpdate: true
         # Read by SparkleUpdater: Debug builds do not update themselves (they would be offered the
         # published release, which shares their bundle ID and Sparkle settings).
         ColimaDesktopUpdates: $(COLIMA_DESKTOP_UPDATES)

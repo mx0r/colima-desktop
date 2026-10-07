@@ -67,6 +67,17 @@ struct MenuModelBuilderTests {
         #expect(UpdatesMenuItem(updater: updater) == .check)
         updater.pendingUpdateVersion = "0.7"
         #expect(UpdatesMenuItem(updater: updater) == .pending("0.7"))
+        // A downloaded update wins over a reminder.
+        updater.readyToInstallVersion = "0.7"
+        #expect(UpdatesMenuItem(updater: updater) == .readyToInstall("0.7"))
+    }
+
+    @Test("A downloaded update offers a restart that installs it")
+    func readyToInstallNode() throws {
+        let restart = try #require(node("updates", in: MenuModelBuilder.build(snapshot(), updates: .readyToInstall("0.7"), now: now)))
+        #expect(restart.title == "Restart to Update to 0.7")
+        #expect(restart.action == .installUpdate)
+        #expect(restart.image == .symbol("arrow.down.circle.fill"))
     }
 
     @Test("Running VM: stop and restart enabled, start disabled")
