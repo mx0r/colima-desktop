@@ -2,11 +2,14 @@ name: Release
 
 # Tag a commit and the DMG builds, gets signed for Sparkle and is published:
 #
-#     git tag v0.7 && git push origin v0.7
+#     git tag v0.7 && git push origin v0.7              # stable
+#     git tag v0.8.0-beta.1 && git push origin v0.8.0-beta.1   # beta: any version with a "-"
 #
 # The version comes from the tag (bump project.yml anyway, so local builds stop calling themselves
-# the old version); the build number is the commit count. A manual run from a branch only builds;
-# a manual run on a tag (`--ref vX.Y`) also signs, which proves the key, but never publishes.
+# the old version); the build number is the commit count. Every release is added to the update
+# feed, site/appcast.xml (beta releases on Sparkle's "beta" channel). A manual run from a branch
+# only builds; a manual run on a tag (`--ref vX.Y`) also signs, which proves the key, but never
+# publishes.
 on:
   push:
     tags:
@@ -90,25 +93,46 @@ jobs:
           name: ColimaDesktop-${{ steps.version.outputs.version }}
           path: ${{ steps.artefacts.outputs.dir }}
 
-  # Signs the update and publishes. It holds the key, so it runs nothing from the package build:
-  # only this repository's scripts and Sparkle's release tools, verified by checksum. The
-  # `release` environment admits only v* tags.
+  # Signs the update, publishes the release and adds it to the update feed. It holds the key, so it
+  # runs nothing from the package build: only this repository's scripts and Sparkle's release
+  # tools, verified by checksum. The `release` environment admits only v* tags.
   publish:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     environment: release
     permissions:
-      # Needed to create the release and attach the files to it.
+      # Create the release, and commit the update feed to main.
       contents: write
+      # Start the Pages workflow: pushes made with the job token do not trigger workflows.
+      actions: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
 
     steps:
+      # The tagged commit: its scripts and release notes match the release, whichever branch
+      # (main or a release/x.y integration branch) the tag is on.
       - uses: actions/checkout@v4
+
+      # The update feed lives on main, which Pages deploys.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: feed
 
       - uses: actions/download-artifact@v4
         with:
           name: ColimaDesktop-${{ needs.build.outputs.version }}
           path: release
+
+      - name: Work out the channel
+        id: channel
+        # A version with a pre-release suffix (0.8.0-beta.1) is a beta.
+        run: |
+          case "$VERSION" in
+            *-*) echo "channel=beta" >> "$GITHUB_OUTPUT" ;;
+            *) echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Fetch Sparkle's tools
         # The same version as Package.swift pins, from Sparkle's release, at the digest GitHub lists.
@@ -125,23 +149,37 @@ jobs:
         # key inside the app, so a mismatched key fails here, before anything is published.
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          # A real release must say what changed in the update dialog: release-notes/<version>.md.
+          REQUIRE_RELEASE_NOTES: ${{ github.event_name == 'push' && '1' || '' }}
         run: |
           [ -n "$SPARKLE_ED_PRIVATE_KEY" ] || { echo "::error::SPARKLE_ED_PRIVATE_KEY is not set for the release environment"; exit 1; }
           dmg=$(find release -name "*.dmg" -print -quit)
-          ./scripts/make-appcast.sh "$dmg"
+          if [ "$CHANNEL" = beta ]; then
+            ./scripts/make-appcast.sh --channel beta "$dmg"
+          else
+            ./scripts/make-appcast.sh "$dmg"
+          fi
 
       - name: Publish the release
         # Only for a pushed tag; a manual run on a tag stops after signing.
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.build.outputs.version }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
         run: |
           dmg=$(find release -name "*.dmg" -print -quit)
           notes=$(mktemp)
           {
-            echo "Colima Desktop $VERSION"
+            # The same highlights Sparkle shows; GitHub's generated change list follows below.
+            echo "## What's new in $VERSION"
             echo
+            cat "release-notes/$VERSION.md"
+            echo
+            if [ "$CHANNEL" = beta ]; then
+              echo "**Beta.** Offered in the app to users on the Beta update channel (Settings → Updates)."
+              echo
+            fi
             echo "A menu bar app for [Colima](https://github.com/abiosoft/colima). Requires macOS 26 and Colima."
             echo
             echo "**This build is signed ad hoc, not with an Apple Developer ID.**"
@@ -153,10 +191,35 @@ jobs:
             echo '```'
           } > "$notes"
 
+          files=("$dmg" "$dmg.sha256" "release/Read Me.txt")
+          flags=()
+          if [ "$CHANNEL" = beta ]; then
+            # A prerelease never becomes "latest", so the site and 0.6.x installs ignore it.
+            flags+=(--prerelease)
+          else
+            # 0.6.x installs read the newest stable release's own appcast.
+            files+=(release/appcast.xml)
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --title "Colima Desktop $VERSION" \
             --notes-file "$notes" \
-            "$dmg" \
-            "$dmg.sha256" \
-            release/appcast.xml \
-            "release/Read Me.txt"
+            --generate-notes \
+            "${flags[@]}" \
+            "${files[@]}"
+
+      - name: Add the release to the update feed
+        # After the release exists, so the feed never points at a missing download.
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Creates the feed if main does not have it yet.
+          swift scripts/merge-appcast.swift feed/site/appcast.xml release/appcast.xml
+          cd feed
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/appcast.xml
+          git commit -m "chore: add $GITHUB_REF_NAME to the update feed"
+          # Someone may have pushed meanwhile; the feed file is only ever written here.
+          git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }
+          gh workflow run pages.yml --ref main

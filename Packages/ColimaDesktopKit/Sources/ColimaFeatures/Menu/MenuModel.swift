@@ -101,6 +101,8 @@ public enum UpdatesMenuItem: Hashable, Sendable {
     case check
     /// "Update to X…" for a version found by a background check.
     case pending(String)
+    /// "Restart to Update to X" for a version already downloaded in the background.
+    case readyToInstall(String)
 
     /// The entry for an updater's current state.
     @MainActor
@@ -109,7 +111,13 @@ public enum UpdatesMenuItem: Hashable, Sendable {
             self = .hidden
             return
         }
-        self = updater.pendingUpdateVersion.map(UpdatesMenuItem.pending) ?? .check
+        if let ready = updater.readyToInstallVersion {
+            self = .readyToInstall(ready)
+        } else if let pending = updater.pendingUpdateVersion {
+            self = .pending(pending)
+        } else {
+            self = .check
+        }
     }
 }
 
@@ -151,6 +159,8 @@ public enum MenuAction: Hashable, Sendable {
     case showAbout
     /// Shows the updater: a check, or the update found in the background.
     case checkForUpdates
+    /// Installs the update downloaded in the background and relaunches.
+    case installUpdate
     case quit
 
     /// Whether the action needs confirmation before it runs.

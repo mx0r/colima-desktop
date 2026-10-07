@@ -22,7 +22,8 @@ final class ActionRouter {
 
     /// Handles a menu action. Confirmation runs synchronously, before any task starts.
     func handle(_ action: MenuAction) {
-        guard ConfirmationPresenter.confirm(action, profile: store.snapshot.selectedProfile) else { return }
+        let profile = store.snapshot.selectedProfile
+        guard ConfirmationPresenter.confirm(action, profile: profile, appearance: store.settings.interfaceAppearance) else { return }
         switch action {
         case .startVM:
             store.requestVMOperation(.start)
@@ -49,6 +50,8 @@ final class ActionRouter {
             AboutPanel.show(snapshot: store.snapshot)
         case .checkForUpdates:
             updater?.checkForUpdates()
+        case .installUpdate:
+            updater?.installUpdateAndRelaunch()
         case .quit:
             NSApp.terminate(nil)
         }
@@ -70,8 +73,9 @@ final class ActionRouter {
             title: "Logs — \(name)",
             size: NSSize(width: 900, height: 560),
             autosaveName: "LogsWindow",
+            role: .console(.logs),
             onClose: { model.stop() },
-            content: { LogsWindowView(model: model) }
+            content: { [store] in LogsWindowView(model: model, textStyle: { store.settings.logsText }) }
         )
     }
 
@@ -89,8 +93,9 @@ final class ActionRouter {
             title: "Terminal — \(name)",
             size: NSSize(width: 820, height: 520),
             autosaveName: "TerminalWindow",
+            role: .console(.terminal),
             onClose: { model.close() },
-            content: { TerminalWindowView(model: model) }
+            content: { [store] in TerminalWindowView(model: model, textStyle: { store.settings.terminalText }) }
         )
     }
 
@@ -111,6 +116,7 @@ final class ActionRouter {
         let alert = NSAlert()
         alert.messageText = "Docker is not connected"
         alert.informativeText = "Wait until Colima is running and Docker is reachable, then try again."
+        alert.window.appearance = store.settings.interfaceAppearance.nsAppearance
         NSApp.activate()
         alert.runModal()
     }

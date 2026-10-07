@@ -36,11 +36,16 @@ socket, so the docker CLI is not needed.
   - **Open localhost:PORT** for each published TCP port,
   - start, stop… and restart…, and delete… once the container is stopped (volumes and the image
     are kept).
-- **Updates** through [Sparkle](https://sparkle-project.org): a daily background check (on by
-  default, switchable in Settings), **Check for Updates…** in the menu, and "Update to X…" in the
-  menu once a background check finds one — no window steals focus.
-- **Settings**: menu bar icon style, launch at login, updates, notifications, refresh interval,
-  terminal shell, log sizes, and overrides for everything detected automatically.
+- **Updates** through [Sparkle](https://sparkle-project.org): a daily background check, and new
+  versions downloaded and installed in the background — on quit, or right away with **Restart to
+  Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
+  No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
+  to the update channel: **Stable**, or **Beta** for pre-release versions too.
+- **Settings**: menu bar icon style, appearance, launch at login, updates, notifications, refresh
+  interval, terminal shell, log sizes, and overrides for everything detected automatically.
+- **Appearance**: System, Light or Dark, set apart for the interface (menu, Settings, About,
+  dialogs), for terminal windows and for logs windows. The terminal and the logs each have their
+  own font, size and line height too. Changes apply to open windows at once.
 
 ### Menu bar icon styles
 
@@ -135,8 +140,17 @@ runtime and prints the two `notarytool` commands that remove the right-click-to-
 Pushing a tag builds and publishes the DMG:
 
 ```sh
-git tag v0.6 && git push origin v0.6
+git tag v0.7 && git push origin v0.7                     # stable
+git tag v0.8.0-beta.1 && git push origin v0.8.0-beta.1   # beta: any version with a "-"
 ```
+
+A beta is published as a GitHub prerelease and goes into the feed on the beta channel; it does
+not change the site's download link.
+
+Every release needs `release-notes/<version>.md` with its most important changes, in Markdown.
+Sparkle embeds it in the update dialog, followed by a link to the full release, and it heads the
+GitHub release above GitHub's generated change list. The workflow fails a tagged release without
+it.
 
 `.github/workflows/release.yml` has two jobs:
 
@@ -148,7 +162,8 @@ git tag v0.6 && git push origin v0.6
   build: this repository's scripts and Sparkle's release tools, downloaded at a pinned checksum.
   `scripts/make-appcast.sh` signs the DMG, writes `appcast.xml` and checks the signature against
   the public key inside the app before anything is published. The release then carries the DMG,
-  its checksum, the appcast and the readme.
+  its checksum, the readme and (stable only) the appcast, and the job commits the updated feed
+  (`site/appcast.xml`) to `main` and starts the Pages workflow.
 
 The version comes from the tag and the build number from the commit count; both reach the app
 because `Info.plist` resolves `CFBundleShortVersionString` and `CFBundleVersion` from build
@@ -162,15 +177,31 @@ pull request.
 
 ### Updates (Sparkle)
 
-The app checks `https://github.com/mx0r/colima-desktop/releases/latest/download/appcast.xml`
-(`SUFeedURL`). Every release attaches its own `appcast.xml`, and GitHub redirects `latest` to the
-newest release, so publishing a release is all it takes. `scripts/make-appcast.sh` signs the DMG
-with the update signing key and writes the appcast; it then checks the signature against the
-public key inside the app and fails the release on a mismatch. The release workflow refuses to
-publish without an appcast.
+The app reads one cumulative feed, `https://mx0r.github.io/colima-desktop/appcast.xml`
+(`SUFeedURL`), served from `site/appcast.xml` on `main` — the release workflow writes it (the
+first release creates it), so it exists on no other branch. It holds the newest entries of both
+channels:
+entries without `<sparkle:channel>` are stable, entries with `<sparkle:channel>beta</sparkle:channel>`
+are beta and only offered when Settings → Updates → Update channel is **Beta** (Sparkle's
+`allowedChannels(for:)`). Sparkle never downgrades: switching back to Stable keeps the installed
+beta until a newer stable version is out.
+
+The release workflow keeps the feed: `scripts/make-appcast.sh` signs the DMG with the update
+signing key and writes a one-entry appcast (with `--channel beta` for betas), checking the
+signature against the public key inside the app; `scripts/merge-appcast.swift` merges it into
+`site/appcast.xml` on `main`, which the workflow commits before redeploying the site — also for a
+tag on a `release/x.y` integration branch, whose own scripts and release notes it uses. Stable
+releases also attach their own `appcast.xml`: builds before 0.7 read
+`releases/latest/download/appcast.xml`, and GitHub's "latest" is the newest stable release.
 
 Code signing stays ad hoc: Sparkle accepts ad-hoc signed updates as long as the EdDSA signature
 verifies. Releases before 0.6 have no updater — those installs need one manual update.
+
+Background installs are Sparkle's automatic updates (`SUAutomaticallyUpdate`, on by default; the
+user's choice in Settings overrides it). Sparkle downloads the update, checks its signature and
+installs it when the app quits. `SparkleUpdater` takes Sparkle's install-now handler
+(`updater(_:willInstallUpdateOnQuit:immediateInstallationBlock:)`), so the menu can offer
+"Restart to Update to X" before that.
 
 Only Release builds update themselves (`COLIMA_DESKTOP_UPDATES` in `project.yml`). Debug builds
 (`make run`, `make install`) have no updater and no "Check for Updates…": they share the bundle ID
@@ -267,11 +298,11 @@ Packages/ColimaDesktopKit/
   Sources/ColimaInfrastructure/  processes, colima CLI, unix-socket HTTP, Docker client, system services
   Sources/ColimaFeatures/        AppStore, menu model, logs/terminal/settings view models
   Sources/ColimaUI/              status item, menu renderer, icons, windows, SwiftUI views
-  Sources/ColimaTerminal/        SwiftTerm bridge
+  Sources/ColimaTerminal/        SwiftTerm bridge (uses ColimaUI for console fonts)
   Sources/ColimaUpdates/         Sparkle updater
   Sources/ColimaAppShell/        composition root
   Tests/                         one target per layer, plus live integration tests
-scripts/                         build-release.sh, make-appcast.sh, generate-app-icon.sh
+scripts/                         build-release.sh, make-appcast.sh, merge-appcast.swift, icons
 site/                            landing page
 docs/                            architecture, Docker API, testing; README images
 AGENTS.md                        guide for coding agents (CLAUDE.md imports it)

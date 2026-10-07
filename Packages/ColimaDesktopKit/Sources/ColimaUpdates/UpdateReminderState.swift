@@ -7,6 +7,9 @@ import Foundation
 struct UpdateReminderState: Equatable {
     /// Version waiting for the user; nil when none.
     private(set) var pendingVersion: String?
+    /// Version downloaded in the background and installed on quit or restart; nil when none.
+    /// Kept until the app relaunches: Sparkle installs it then in any case.
+    private(set) var readyVersion: String?
 
     /// Whether Sparkle may show a scheduled update itself. Never: `immediateFocus` is true right
     /// after launch (e.g. at login), which would pop a window nobody asked for.
@@ -26,6 +29,12 @@ struct UpdateReminderState: Equatable {
 
     /// The update session ended (installed, skipped or dismissed).
     mutating func sessionFinished() {
+        pendingVersion = nil
+    }
+
+    /// An update finished downloading in the background and waits to be installed.
+    mutating func updateReadyToInstall(version: String) {
+        readyVersion = version
         pendingVersion = nil
     }
 }

@@ -9,7 +9,8 @@ make test-live    # plus live integration tests (COLIMA_DESKTOP_IT=1)
 
 Swift Testing, one target per layer:
 
-- **ColimaDomainTests:** lifecycle reducer tables, grouping, ports, path resolution, settings decoding.
+- **ColimaDomainTests:** lifecycle reducer tables, grouping, ports, path resolution, settings decoding
+  (including appearance and console text styles, clamped to their ranges).
 - **ColimaInfrastructureTests:**
   - Process runner, including a >1 MB output deadlock regression, cancellation, timeout and grandchildren.
   - colima output parsing against fixtures captured from a real installation.
@@ -22,7 +23,8 @@ Swift Testing, one target per layer:
   - Menu model scenarios.
   - Logs, terminal and settings view models.
 - **ColimaUITests:** `MenuRenderer` reconciliation on real `NSMenu` objects (identity is kept, items move and
-  are removed), status icons and confirmation texts.
+  are removed), status icons, confirmation texts, console fonts (fallback, row height) and the appearance
+  mapping.
 - **ColimaIntegrationTests:** only with `COLIMA_DESKTOP_IT=1`. They need the default profile running with
   Docker and read real colima and Docker state. The exec test runs `echo` in the first running container.
 
@@ -36,6 +38,14 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] The menu bar icon shows the state in every style (Settings → Menu bar icon). The choice applies at once.
       Check each style in a light and a dark menu bar. The status light style must switch its llama color when
       the menu bar changes between light and dark.
+- [ ] Settings → Appearance → Interface Dark, with Terminal and Logs → Appearance on System. The menu,
+      Settings, About and the Stop… alert are dark; open logs and terminal windows follow macOS and switch
+      when macOS does. Then Terminal Light and Logs Dark: each switches at once and only its own windows,
+      the terminal text and background too. Each setting on System follows macOS, including Auto.
+- [ ] Upgrading from 0.7.0-beta.2 keeps its "Logs and terminal" appearance for both Terminal and Logs.
+- [ ] Settings → Terminal and Logs: font, size and line height change open windows at once. The
+      terminal keeps working after a change (the TTY gets the new size). A font that was uninstalled shows
+      "(not installed)" and the window uses the system monospaced font.
 - [ ] `colima stop` / `colima start` in a shell updates the icon without opening the menu.
 - [ ] With the menu open, `docker run --rm -d nginx` in a shell adds the container to the open menu, and an
       open container submenu stays open.
@@ -62,5 +72,11 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] With an older release installed and automatic checks on, the menu shows "Update to X…"
       after the background check — also right after launch at login — and no window opens by
       itself.
-- [ ] Settings → Updates: the switch survives a relaunch.
+- [ ] With an older release installed and both update switches on, the background check
+      downloads the update silently and the menu shows "Restart to Update to X"; choosing it
+      installs and relaunches. Quitting instead installs it, and the next launch is the new version.
+- [ ] Update channel: on Stable, a published beta is not offered; switching to Beta offers it at
+      the next check (or Check Now); switching back to Stable keeps the beta installed.
+- [ ] Settings → Updates: "Download and install updates automatically" is greyed out while
+      automatic checks are off; both switches survive a relaunch.
 - [ ] Quit closes the app and its windows.

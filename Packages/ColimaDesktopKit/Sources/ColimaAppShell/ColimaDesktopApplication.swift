@@ -24,13 +24,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
     private var router: ActionRouter?
     private var updater: SparkleUpdater?
+    private var appearanceTask: Task<Void, Never>?
     private let windows = WindowManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
         let store = AppStore(dependencies: LiveEnvironment.dependencies())
         // Debug builds do not update themselves: they would be offered the published release.
-        let updater = SparkleUpdater.isEnabledForMainBundle ? SparkleUpdater() : nil
+        let updater = SparkleUpdater.isEnabledForMainBundle
+            ? SparkleUpdater(allowedChannels: { [weak store] in store?.settings.updateChannel.sparkleChannels ?? [] })
+            : nil
         let router = ActionRouter(store: store, windows: windows, loginItem: SMAppServiceLoginItem(), updater: updater)
         statusItem = StatusItemController(store: store, updater: updater) { [weak router] action in
             router?.handle(action)
@@ -39,7 +42,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.store = store
         self.router = router
         MainMenu.router = router
+        observeAppearance(of: store)
         store.start()
+    }
+
+    /// Keeps open windows in step with the appearance settings.
+    private func observeAppearance(of store: AppStore) {
+        let windows = windows
+        windows.setAppearance(from: store.settings)
+        appearanceTask = Task { [weak store] in
+            guard let store else { return }
+            let changes = Observations {
+                (store.settings.interfaceAppearance, store.settings.terminalAppearance, store.settings.logsAppearance)
+            }
+            for await _ in changes {
+                windows.setAppearance(from: store.settings)
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

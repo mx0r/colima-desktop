@@ -92,6 +92,22 @@ public final class SettingsViewModel {
         applyNow()
     }
 
+    /// Sets the appearance of interface, terminal or logs windows. Applied at once so open windows switch while the user compares.
+    public func selectAppearance(_ mode: AppearanceMode, for role: WindowRole) {
+        switch role {
+        case .interface: draft.interfaceAppearance = mode
+        case .console(.terminal): draft.terminalAppearance = mode
+        case .console(.logs): draft.logsAppearance = mode
+        }
+        applyNow()
+    }
+
+    /// Sets the font and spacing of the terminal or the logs. Applied at once so open windows follow while the user adjusts it.
+    public func setTextStyle(_ style: ConsoleTextStyle, for console: ConsoleKind) {
+        draft.setTextStyle(style, for: console)
+        applyNow()
+    }
+
     /// Sets or clears the socket override for a profile.
     public func setSocketOverride(_ text: String, for profile: ProfileName) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
@@ -150,6 +166,17 @@ public final class SettingsViewModel {
     public var automaticallyChecksForUpdates: Bool {
         get { updater?.automaticallyChecksForUpdates ?? false }
         set { updater?.automaticallyChecksForUpdates = newValue }
+    }
+
+    /// Background download and install of updates. Persisted by the updater itself.
+    public var automaticallyDownloadsUpdates: Bool {
+        get { updater?.automaticallyDownloadsUpdates ?? false }
+        set { updater?.automaticallyDownloadsUpdates = newValue }
+    }
+
+    /// Whether the automatic-download switch can be used (it needs automatic checks).
+    public var canChangeAutomaticDownloads: Bool {
+        updater?.allowsAutomaticUpdates ?? false
     }
 
     /// Checks for updates now.

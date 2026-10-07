@@ -86,6 +86,75 @@ struct DomainModelTests {
         #expect(stored.menuBarIconStyle == .llamaDot)
     }
 
+    @Test("Update channel defaults to stable, survives unknown values, and maps to Sparkle channels")
+    func updateChannel() throws {
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8)).updateChannel == .stable)
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data(#"{"updateChannel": "nightly"}"#.utf8)).updateChannel == .stable)
+        #expect(try JSONDecoder().decode(AppSettings.self, from: Data(#"{"updateChannel": "beta"}"#.utf8)).updateChannel == .beta)
+        #expect(UpdateChannel.stable.sparkleChannels.isEmpty)
+        #expect(UpdateChannel.beta.sparkleChannels == ["beta"])
+        #expect(UpdateChannel.allCases == [.stable, .beta])
+    }
+
+    @Test("Appearance and console text default to system and sensible sizes, and survive bad values")
+    func appearanceSettings() throws {
+        let defaults = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        #expect(defaults.interfaceAppearance == .system)
+        #expect(defaults.terminalAppearance == .system)
+        #expect(defaults.logsAppearance == .system)
+        #expect(defaults.terminalText == .terminalDefault)
+        #expect(defaults.logsText == .logsDefault)
+
+        let odd = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"interfaceAppearance": "sepia", "terminalAppearance": "dark", "logsAppearance": "light", "terminalText": {"fontSize": 200, "lineHeight": 0.2, "fontFamily": "Menlo"}}"#.utf8))
+        #expect(odd.interfaceAppearance == .system)
+        #expect(odd.terminalAppearance == .dark)
+        #expect(odd.logsAppearance == .light)
+        #expect(odd.terminalText.fontSize == ConsoleTextStyle.fontSizeRange.upperBound)
+        #expect(odd.terminalText.lineHeight == ConsoleTextStyle.lineHeightRange.lowerBound)
+        #expect(odd.terminalText.fontFamily == "Menlo")
+    }
+
+    @Test("Console text values are clamped to their ranges")
+    func textStyleClamping() {
+        let style = ConsoleTextStyle(fontFamily: "  ", fontSize: 2, lineHeight: 9).clamped()
+        #expect(style.fontFamily == nil)
+        #expect(style.fontSize == ConsoleTextStyle.fontSizeRange.lowerBound)
+        #expect(style.lineHeight == ConsoleTextStyle.lineHeightRange.upperBound)
+    }
+
+    @Test("Interface, terminal and logs windows each take their own appearance")
+    func appearanceForRole() {
+        let settings = AppSettings(interfaceAppearance: .dark, terminalAppearance: .system, logsAppearance: .light)
+        #expect(settings.appearance(for: .interface) == .dark)
+        #expect(settings.appearance(for: .console(.terminal)) == .system)
+        #expect(settings.appearance(for: .console(.logs)) == .light)
+    }
+
+    @Test("The shared logs-and-terminal appearance of 0.7.0-beta.2 carries over to both")
+    func legacyConsoleAppearance() throws {
+        let legacy = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"consoleAppearance": "dark"}"#.utf8))
+        #expect(legacy.terminalAppearance == .dark)
+        #expect(legacy.logsAppearance == .dark)
+
+        let mixed = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"consoleAppearance": "dark", "logsAppearance": "light"}"#.utf8))
+        #expect(mixed.terminalAppearance == .dark)
+        #expect(mixed.logsAppearance == .light)
+
+        let encoded = String(decoding: try JSONEncoder().encode(legacy), as: UTF8.self)
+        #expect(!encoded.contains("consoleAppearance"))
+    }
+
+    @Test("Terminal and logs each have their own text style")
+    func textStyleForConsole() {
+        var settings = AppSettings()
+        let style = ConsoleTextStyle(fontFamily: "Menlo", fontSize: 15, lineHeight: 1.2)
+        settings.setTextStyle(style, for: .logs)
+        #expect(settings.textStyle(for: .logs) == style)
+        #expect(settings.textStyle(for: .terminal) == .terminalDefault)
+        settings.setTextStyle(ConsoleTextStyle(fontFamily: nil, fontSize: 99, lineHeight: 1), for: .terminal)
+        #expect(settings.textStyle(for: .terminal).fontSize == ConsoleTextStyle.fontSizeRange.upperBound)
+    }
+
     @Test("Every icon style has a name")
     func iconStyleNames() {
         #expect(MenuBarIconStyle.allCases == [.container, .llamaCubes, .llamaDot, .llamaSymbols])
@@ -94,7 +163,7 @@ struct DomainModelTests {
 
     @Test("Settings round-trip through JSON")
     func settingsRoundTrip() throws {
-        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols)
+        let original = AppSettings(colimaHomePath: "~/x", terminalShell: .custom("zsh -l"), selectedProfile: ProfileName("work"), menuBarIconStyle: .llamaSymbols, updateChannel: .beta, interfaceAppearance: .dark, terminalAppearance: .light, logsAppearance: .dark, terminalText: ConsoleTextStyle(fontFamily: "Menlo", fontSize: 14, lineHeight: 1.3), logsText: ConsoleTextStyle(fontFamily: nil, fontSize: 10, lineHeight: 1.1))
         let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(original))
         #expect(decoded == original)
     }

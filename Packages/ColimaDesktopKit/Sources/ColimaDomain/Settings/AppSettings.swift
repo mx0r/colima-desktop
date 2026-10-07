@@ -24,6 +24,18 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var selectedProfile: ProfileName?
     /// Look of the menu bar icon.
     public var menuBarIconStyle: MenuBarIconStyle
+    /// Which releases the updater offers.
+    public var updateChannel: UpdateChannel
+    /// Appearance of menus, Settings, About and dialogs.
+    public var interfaceAppearance: AppearanceMode
+    /// Appearance of terminal windows.
+    public var terminalAppearance: AppearanceMode
+    /// Appearance of logs windows.
+    public var logsAppearance: AppearanceMode
+    /// Font and spacing of terminal windows.
+    public var terminalText: ConsoleTextStyle
+    /// Font and spacing of logs windows.
+    public var logsText: ConsoleTextStyle
 
     /// Settings with all values auto-detected.
     public static let defaults = AppSettings()
@@ -40,7 +52,13 @@ public struct AppSettings: Codable, Hashable, Sendable {
         logBufferCapacity: Int = 50_000,
         notificationsEnabled: Bool = true,
         selectedProfile: ProfileName? = nil,
-        menuBarIconStyle: MenuBarIconStyle = .llamaCubes
+        menuBarIconStyle: MenuBarIconStyle = .llamaCubes,
+        updateChannel: UpdateChannel = .stable,
+        interfaceAppearance: AppearanceMode = .system,
+        terminalAppearance: AppearanceMode = .system,
+        logsAppearance: AppearanceMode = .system,
+        terminalText: ConsoleTextStyle = .terminalDefault,
+        logsText: ConsoleTextStyle = .logsDefault
     ) {
         self.colimaExecutablePath = colimaExecutablePath
         self.colimaHomePath = colimaHomePath
@@ -53,6 +71,12 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.notificationsEnabled = notificationsEnabled
         self.selectedProfile = selectedProfile
         self.menuBarIconStyle = menuBarIconStyle
+        self.updateChannel = updateChannel
+        self.interfaceAppearance = interfaceAppearance
+        self.terminalAppearance = terminalAppearance
+        self.logsAppearance = logsAppearance
+        self.terminalText = terminalText
+        self.logsText = logsText
     }
 
     // Tolerant decoding: missing keys fall back to defaults so stored settings survive app updates.
@@ -71,6 +95,19 @@ public struct AppSettings: Codable, Hashable, Sendable {
         selectedProfile = try c.decodeIfPresent(ProfileName.self, forKey: .selectedProfile)
         // A style from a newer version falls back to the default instead of failing the whole decode.
         menuBarIconStyle = (try? c.decodeIfPresent(MenuBarIconStyle.self, forKey: .menuBarIconStyle)) ?? d.menuBarIconStyle
+        updateChannel = (try? c.decodeIfPresent(UpdateChannel.self, forKey: .updateChannel)) ?? d.updateChannel
+        interfaceAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .interfaceAppearance)) ?? d.interfaceAppearance
+        // 0.7.0-beta.2 had one setting for logs and terminal; it carries over to both.
+        let shared = try? decoder.container(keyedBy: LegacyKeys.self).decodeIfPresent(AppearanceMode.self, forKey: .consoleAppearance)
+        terminalAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .terminalAppearance)) ?? shared ?? d.terminalAppearance
+        logsAppearance = (try? c.decodeIfPresent(AppearanceMode.self, forKey: .logsAppearance)) ?? shared ?? d.logsAppearance
+        terminalText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .terminalText)) ?? d.terminalText
+        logsText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .logsText)) ?? d.logsText
+    }
+
+    /// Keys that older versions wrote and this one only reads.
+    private enum LegacyKeys: String, CodingKey {
+        case consoleAppearance
     }
 
     /// Docker socket override for a profile, if one is set and not blank.
@@ -79,6 +116,30 @@ public struct AppSettings: Codable, Hashable, Sendable {
             return nil
         }
         return path
+    }
+}
+
+/// Which releases the updater offers.
+public enum UpdateChannel: String, Codable, CaseIterable, Hashable, Sendable {
+    /// Stable releases only.
+    case stable
+    /// Stable and beta releases.
+    case beta
+
+    /// Name shown in Settings.
+    public var displayName: String {
+        switch self {
+        case .stable: "Stable"
+        case .beta: "Beta"
+        }
+    }
+
+    /// Sparkle channels allowed in addition to the default (stable) channel.
+    public var sparkleChannels: Set<String> {
+        switch self {
+        case .stable: []
+        case .beta: ["beta"]
+        }
     }
 }
 

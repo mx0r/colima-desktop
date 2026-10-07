@@ -240,6 +240,25 @@ struct SettingsViewModelTests {
         #expect(harness.settingsStore.saved.menuBarIconStyle == .llamaDot)
     }
 
+    @Test("Appearance and text style apply at once, so open windows follow the change")
+    func appearanceAppliesImmediately() async {
+        let harness = await StoreHarness().started()
+        let sut = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), clock: ManualClock())
+        sut.selectAppearance(.dark, for: .interface)
+        sut.selectAppearance(.light, for: .console(.terminal))
+        sut.selectAppearance(.system, for: .console(.logs))
+        #expect(harness.store.settings.interfaceAppearance == .dark)
+        #expect(harness.store.settings.terminalAppearance == .light)
+        #expect(harness.store.settings.logsAppearance == .system)
+
+        let style = ConsoleTextStyle(fontFamily: "Menlo", fontSize: 14, lineHeight: 1.2)
+        sut.setTextStyle(style, for: .terminal)
+        sut.setTextStyle(ConsoleTextStyle(fontFamily: nil, fontSize: 1, lineHeight: 1), for: .logs)
+        #expect(harness.store.settings.terminalText == style)
+        #expect(harness.store.settings.logsText.fontSize == ConsoleTextStyle.fontSizeRange.lowerBound)
+        #expect(harness.settingsStore.saved.terminalText == style)
+    }
+
     @Test("Update settings forward to the updater")
     func updater() async {
         let harness = await StoreHarness().started()
@@ -251,6 +270,13 @@ struct SettingsViewModelTests {
         #expect(!updater.automaticallyChecksForUpdates)
         sut.checkForUpdates()
         #expect(updater.checkCount == 1)
+
+        #expect(sut.automaticallyDownloadsUpdates)
+        #expect(sut.canChangeAutomaticDownloads)
+        sut.automaticallyDownloadsUpdates = false
+        #expect(!updater.automaticallyDownloadsUpdates)
+        updater.allowsAutomaticUpdates = false
+        #expect(!sut.canChangeAutomaticDownloads)
 
         let without = SettingsViewModel(store: harness.store, loginItem: FakeLoginItem(), clock: ManualClock())
         #expect(!without.hasUpdater)

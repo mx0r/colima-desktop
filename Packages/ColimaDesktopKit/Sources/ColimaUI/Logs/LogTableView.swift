@@ -6,6 +6,7 @@ import SwiftUI
 /// Virtualized, single-column log list backed by `NSTableView`. Only visible rows are realized.
 struct LogTableView: NSViewRepresentable {
     let model: LogsViewModel
+    let style: ConsoleTextStyle
 
     func makeCoordinator() -> Coordinator {
         Coordinator(model: model)
@@ -15,7 +16,7 @@ struct LogTableView: NSViewRepresentable {
         let table = CopyableTableView()
         table.headerView = nil
         table.usesAutomaticRowHeights = false
-        table.rowHeight = Coordinator.rowHeight
+        table.rowHeight = ConsoleFonts.logRowHeight(for: style)
         table.intercellSpacing = NSSize(width: 0, height: 0)
         table.allowsMultipleSelection = true
         table.selectionHighlightStyle = .regular
@@ -49,17 +50,19 @@ struct LogTableView: NSViewRepresentable {
         let revision = model.revision
         let showsTimestamps = model.showsTimestamps
         let filter = model.filterText
-        context.coordinator.update(revision: revision, showsTimestamps: showsTimestamps, filter: filter)
+        context.coordinator.update(revision: revision, showsTimestamps: showsTimestamps, filter: filter, style: style)
     }
 
     @MainActor
     final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         static let columnID = NSUserInterfaceItemIdentifier("line")
         static let cellID = NSUserInterfaceItemIdentifier("cell")
-        static let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-        static let rowHeight: CGFloat = 16
 
         private let model: LogsViewModel
+        private var style: ConsoleTextStyle?
+        private var font = ConsoleFonts.font(for: .logsDefault)
+        private var markerFont = ConsoleFonts.emphasizedFont(for: .logsDefault)
+        private var rowHeight = ConsoleFonts.logRowHeight(for: .logsDefault)
         private weak var table: NSTableView?
         private weak var scrollView: NSScrollView?
         private var lastRevision = -1
@@ -81,12 +84,20 @@ struct LogTableView: NSViewRepresentable {
             )
         }
 
-        func update(revision: Int, showsTimestamps: Bool, filter: String) {
+        func update(revision: Int, showsTimestamps: Bool, filter: String, style: ConsoleTextStyle) {
             guard let table else { return }
-            let needsReload = revision != lastRevision || showsTimestamps != self.showsTimestamps || filter != self.filter
+            let styleChanged = style != self.style
+            let needsReload = styleChanged || revision != lastRevision || showsTimestamps != self.showsTimestamps || filter != self.filter
             lastRevision = revision
             self.showsTimestamps = showsTimestamps
             self.filter = filter
+            if styleChanged {
+                self.style = style
+                font = ConsoleFonts.font(for: style)
+                markerFont = ConsoleFonts.emphasizedFont(for: style)
+                rowHeight = ConsoleFonts.logRowHeight(for: style)
+                table.rowHeight = rowHeight
+            }
             guard needsReload else { return }
             table.reloadData()
             if model.isFollowing, table.numberOfRows > 0 {
@@ -109,7 +120,7 @@ struct LogTableView: NSViewRepresentable {
             NotificationCenter.default.removeObserver(self, name: NSScrollView.didEndLiveScrollNotification, object: scrollView)
             guard let table, let scrollView else { return }
             let visible = scrollView.contentView.bounds
-            let atBottom = visible.maxY >= table.bounds.maxY - Self.rowHeight
+            let atBottom = visible.maxY >= table.bounds.maxY - rowHeight
             if !atBottom { model.isFollowing = false }
         }
 
@@ -144,17 +155,17 @@ struct LogTableView: NSViewRepresentable {
 
         private func attributedText(for entry: LogEntry) -> NSAttributedString {
             let result = NSMutableAttributedString()
-            let base: [NSAttributedString.Key: Any] = [.font: Self.font, .foregroundColor: NSColor.labelColor]
+            let base: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.labelColor]
             if showsTimestamps, let timestamp = entry.line.timestamp {
                 result.append(NSAttributedString(
                     string: Format.logTimestamp(timestamp) + "  ",
-                    attributes: [.font: Self.font, .foregroundColor: NSColor.secondaryLabelColor]
+                    attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
                 ))
             }
             if entry.isMarker {
                 result.append(NSAttributedString(
                     string: "──── \(entry.line.text) ────",
-                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.controlAccentColor]
+                    attributes: [.font: markerFont, .foregroundColor: NSColor.controlAccentColor]
                 ))
                 return result
             }
@@ -190,8 +201,15 @@ private final class LogCellView: NSTableCellView {
     var isMarker = false {
         didSet {
             guard isMarker != oldValue else { return }
-            layer?.backgroundColor = isMarker ? NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor : nil
+            needsDisplay = true
         }
+    }
+
+    // The layer color is resolved here, in the view's own appearance, and again when it changes.
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        layer?.backgroundColor = isMarker ? NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor : nil
     }
 
     init(identifier: NSUserInterfaceItemIdentifier) {

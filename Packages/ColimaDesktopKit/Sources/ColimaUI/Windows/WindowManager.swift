@@ -1,16 +1,50 @@
 import AppKit
+import ColimaDomain
 import SwiftUI
 
 /// Opens and tracks app windows (logs, terminals, settings).
 ///
 /// While any window is open the app gets a Dock icon and appears in ⌘-Tab; with no windows it is a pure menu bar app.
+///
+/// Appearance: the app-wide appearance stays at the macOS setting, so a window group set to System
+/// follows macOS even while another group is forced light or dark. Each window gets the appearance
+/// of its role instead: terminal or logs for those windows and their sheets, interface for all
+/// other windows, including those AppKit or Sparkle create (About, alerts, update dialogs).
 public final class WindowManager: NSObject, NSWindowDelegate {
     private var windows: [String: NSWindow] = [:]
+    private var roles: [String: WindowRole] = [:]
     private var closeHandlers: [String: () -> Void] = [:]
+    /// Settings the window appearances come from.
+    private var appearanceSettings = AppSettings.defaults
 
     /// Creates a window manager.
     override public init() {
         super.init()
+        // Windows this class does not create get the interface appearance when they become key,
+        // which happens before their first display.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(anyWindowDidBecomeKey(_:)),
+            name: NSWindow.didBecomeKeyNotification,
+            object: nil
+        )
+    }
+
+    /// Takes the appearance of every window group from the settings and applies it to every open window.
+    public func setAppearance(from settings: AppSettings) {
+        appearanceSettings = settings
+        for window in NSApp.windows where Self.isAppWindow(window) {
+            applyAppearance(to: window)
+        }
+    }
+
+    /// Role of a window: a sheet takes the role of the window it is attached to; windows not opened
+    /// through this class are interface windows.
+    public func role(of window: NSWindow) -> WindowRole {
+        var owner = window
+        while let parent = owner.sheetParent { owner = parent }
+        guard let id = owner.identifier?.rawValue, windows[id] === owner else { return .interface }
+        return roles[id] ?? .interface
     }
 
     /// Whether a window with this ID is open.
@@ -28,12 +62,14 @@ public final class WindowManager: NSObject, NSWindowDelegate {
     ///
     /// - Parameters:
     ///   - autosaveName: Frame autosave name shared by windows of one kind.
+    ///   - role: Which appearance setting the window follows.
     ///   - onClose: Called once when the window closes.
     public func show<Content: View>(
         id: String,
         title: String,
         size: NSSize,
         autosaveName: String,
+        role: WindowRole = .interface,
         minSize: NSSize = NSSize(width: 360, height: 240),
         onClose: (() -> Void)? = nil,
         content: () -> Content
@@ -62,6 +98,8 @@ public final class WindowManager: NSObject, NSWindowDelegate {
             window.setFrameTopLeftPoint(window.cascadeTopLeft(from: NSPoint(x: previous.frame.minX, y: previous.frame.maxY)))
         }
         windows[id] = window
+        roles[id] = role
+        applyAppearance(to: window)
         if let onClose { closeHandlers[id] = onClose }
         updateActivationPolicy()
         bringToFront(window)
@@ -75,9 +113,27 @@ public final class WindowManager: NSObject, NSWindowDelegate {
     public func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow, let id = window.identifier?.rawValue else { return }
         windows[id] = nil
+        roles[id] = nil
         closeHandlers.removeValue(forKey: id)?()
         // Defer so the closing window is gone before the policy changes.
         Task { @MainActor in self.updateActivationPolicy() }
+    }
+
+    @objc private func anyWindowDidBecomeKey(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, Self.isAppWindow(window) else { return }
+        applyAppearance(to: window)
+    }
+
+    private func applyAppearance(to window: NSWindow) {
+        let appearance = appearanceSettings.appearance(for: role(of: window)).nsAppearance
+        guard window.appearance?.name != appearance?.name else { return }
+        window.appearance = appearance
+    }
+
+    /// Windows the user works with. Leaves out the menu bar's own window, whose appearance follows
+    /// the menu bar, and other system windows (menus, tooltips).
+    private static func isAppWindow(_ window: NSWindow) -> Bool {
+        (window.canBecomeKey || window.sheetParent != nil) && window.level < .statusBar
     }
 
     private func bringToFront(_ window: NSWindow) {
