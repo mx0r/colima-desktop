@@ -235,12 +235,20 @@ struct AppStoreTests {
     func fileChangeRefresh() async throws {
         let h = await StoreHarness().started()
         let before = h.colima.current.listCalls
-        let sleepers = h.clock.sleeperCount
         h.watcher.emit()
         h.watcher.emit()
-        await h.clock.waitForSleepers(sleepers + 1)
-        await h.clock.advance(by: .milliseconds(250))
-        #expect(await eventually { h.colima.current.listCalls == before + 1 })
+        // The second change cancels the first debounce and starts another; the new sleeper may not be
+        // registered yet when the first one goes. Advance in debounce steps (far below the 30 s
+        // heartbeat) until the refresh ran.
+        for _ in 0..<8 where h.colima.current.listCalls == before {
+            await h.clock.advance(by: AppStore.fileChangeDebounce)
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(h.colima.current.listCalls == before + 1)
+        // Debounced: the two changes made one refresh.
+        await h.clock.advance(by: AppStore.fileChangeDebounce)
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(h.colima.current.listCalls == before + 1)
     }
 
     @Test("Docker events refresh the container list")
