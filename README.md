@@ -41,8 +41,11 @@ socket, so the docker CLI is not needed.
   Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
-- **Settings**: menu bar icon style, launch at login, updates, notifications, refresh interval,
-  terminal shell, log sizes, and overrides for everything detected automatically.
+- **Settings**: menu bar icon style, appearance, launch at login, updates, notifications, refresh
+  interval, terminal shell, log sizes, and overrides for everything detected automatically.
+- **Appearance**: System, Light or Dark, set apart for the interface (menu, Settings, About,
+  dialogs) and for logs and terminal windows. The terminal and the logs each have their own font,
+  size and line height. Changes apply to open windows at once.
 
 ### Menu bar icon styles
 
@@ -295,7 +298,7 @@ Packages/ColimaDesktopKit/
   Sources/ColimaInfrastructure/  processes, colima CLI, unix-socket HTTP, Docker client, system services
   Sources/ColimaFeatures/        AppStore, menu model, logs/terminal/settings view models
   Sources/ColimaUI/              status item, menu renderer, icons, windows, SwiftUI views
-  Sources/ColimaTerminal/        SwiftTerm bridge
+  Sources/ColimaTerminal/        SwiftTerm bridge (uses ColimaUI for console fonts)
   Sources/ColimaUpdates/         Sparkle updater
   Sources/ColimaAppShell/        composition root
   Tests/                         one target per layer, plus live integration tests

@@ -92,6 +92,21 @@ public final class SettingsViewModel {
         applyNow()
     }
 
+    /// Sets the appearance of interface or console windows. Applied at once so open windows switch while the user compares.
+    public func selectAppearance(_ mode: AppearanceMode, for role: WindowRole) {
+        switch role {
+        case .interface: draft.interfaceAppearance = mode
+        case .console: draft.consoleAppearance = mode
+        }
+        applyNow()
+    }
+
+    /// Sets the font and spacing of the terminal or the logs. Applied at once so open windows follow while the user adjusts it.
+    public func setTextStyle(_ style: ConsoleTextStyle, for console: ConsoleKind) {
+        draft.setTextStyle(style, for: console)
+        applyNow()
+    }
+
     /// Sets or clears the socket override for a profile.
     public func setSocketOverride(_ text: String, for profile: ProfileName) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)

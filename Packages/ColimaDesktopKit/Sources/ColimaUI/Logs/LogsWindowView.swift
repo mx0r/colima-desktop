@@ -1,4 +1,5 @@
 import AppKit
+import ColimaDomain
 import ColimaFeatures
 import SwiftUI
 import UniformTypeIdentifiers
@@ -7,10 +8,15 @@ import UniformTypeIdentifiers
 public struct LogsWindowView: View {
     @Bindable private var model: LogsViewModel
     @FocusState private var searchFocused: Bool
+    private let textStyle: () -> ConsoleTextStyle
 
     /// Creates the view; streaming starts when it appears.
-    public init(model: LogsViewModel) {
+    ///
+    /// - Parameter textStyle: Font and spacing of the log lines. Read during `body`, so a value from an
+    ///   observable object (the settings) updates the open window.
+    public init(model: LogsViewModel, textStyle: @escaping () -> ConsoleTextStyle = { .logsDefault }) {
         self.model = model
+        self.textStyle = textStyle
     }
 
     public var body: some View {
@@ -21,7 +27,7 @@ public struct LogsWindowView: View {
                 streamBanner(banner)
                 Divider()
             }
-            LogTableView(model: model)
+            LogTableView(model: model, style: textStyle())
             Divider()
             statusBar
         }

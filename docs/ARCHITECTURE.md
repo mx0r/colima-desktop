@@ -12,7 +12,7 @@ Packages/ColimaDesktopKit/
                                  file watcher, settings store, login item, notifications
     ColimaFeatures/              AppStore, menu model builder, logs/terminal/settings view models
     ColimaUI/                    NSStatusItem, NSMenu renderer, windows, SwiftUI views
-    ColimaTerminal/              SwiftTerm bridge (isolates the dependency)
+    ColimaTerminal/              SwiftTerm bridge (isolates the dependency; uses ColimaUI for console fonts)
     ColimaUpdates/               Sparkle updater (isolates the dependency)
     ColimaAppShell/              composition root: live dependencies, action router, app delegate
     ColimaTestSupport/           fakes and ManualClock for tests
@@ -23,7 +23,7 @@ Packages/ColimaDesktopKit/
 
 ```
 ColimaAppShell ──► ColimaUI ──► ColimaFeatures ──► ColimaDomain
-       │         ColimaTerminal ─┘                     ▲
+       │         ColimaTerminal ─┘  (also ► ColimaUI)  ▲
        ├──────► ColimaUpdates ─────────────────────────┤
        └──────► ColimaInfrastructure ──────────────────┘
 ```
@@ -75,6 +75,19 @@ locations prepended.
 `WindowManager` hosts SwiftUI views in `NSWindow`s and remembers frames per window kind. While any window is
 open, the app switches to the `.regular` activation policy (Dock icon, ⌘-Tab). It goes back to `.accessory`
 when the last window closes.
+
+**Appearance.** Two settings: one for the interface, one for logs and terminal windows (consoles). Each is
+System, Light or Dark. `NSApp.appearance` is never set, so System always means the macOS setting, also for
+consoles while the interface is forced. `WindowManager` gives each window the appearance of its role:
+
+- console windows, opened with `role: .console`, and their sheets get the console setting;
+- every other window gets the interface setting: Settings, and windows it does not create (About, alerts,
+  Sparkle) when they become key;
+- the status menu and its submenus, and the confirmation alerts, set the interface appearance themselves.
+
+The terminal and the logs each have a text style: font family (nil for the system monospaced font), size and
+line height. The views read it from the settings during `body`, so open windows follow a change. SwiftTerm's
+`lineSpacing` takes the line height; log rows are the font's line height times it, plus padding.
 
 - **Logs:** a bounded ring buffer (50 000 lines by default) and a virtualized `NSTableView`. The UI updates are
   batched every 100 ms.

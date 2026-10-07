@@ -9,7 +9,8 @@ make test-live    # plus live integration tests (COLIMA_DESKTOP_IT=1)
 
 Swift Testing, one target per layer:
 
-- **ColimaDomainTests:** lifecycle reducer tables, grouping, ports, path resolution, settings decoding.
+- **ColimaDomainTests:** lifecycle reducer tables, grouping, ports, path resolution, settings decoding
+  (including appearance and console text styles, clamped to their ranges).
 - **ColimaInfrastructureTests:**
   - Process runner, including a >1 MB output deadlock regression, cancellation, timeout and grandchildren.
   - colima output parsing against fixtures captured from a real installation.
@@ -22,7 +23,8 @@ Swift Testing, one target per layer:
   - Menu model scenarios.
   - Logs, terminal and settings view models.
 - **ColimaUITests:** `MenuRenderer` reconciliation on real `NSMenu` objects (identity is kept, items move and
-  are removed), status icons and confirmation texts.
+  are removed), status icons, confirmation texts, console fonts (fallback, row height) and the appearance
+  mapping.
 - **ColimaIntegrationTests:** only with `COLIMA_DESKTOP_IT=1`. They need the default profile running with
   Docker and read real colima and Docker state. The exec test runs `echo` in the first running container.
 
@@ -36,6 +38,13 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] The menu bar icon shows the state in every style (Settings → Menu bar icon). The choice applies at once.
       Check each style in a light and a dark menu bar. The status light style must switch its llama color when
       the menu bar changes between light and dark.
+- [ ] Settings → Appearance: Interface Dark with Logs and terminal System. The menu, Settings, About and
+      the Stop… alert are dark; open logs and terminal windows follow macOS and switch when macOS does.
+      Then Logs and terminal Light: they switch at once, the terminal text and background too. Each
+      setting on System follows macOS, including Auto.
+- [ ] Settings → Terminal and Logs: font, size and line height change open windows at once. The
+      terminal keeps working after a change (the TTY gets the new size). A font that was uninstalled shows
+      "(not installed)" and the window uses the system monospaced font.
 - [ ] `colima stop` / `colima start` in a shell updates the icon without opening the menu.
 - [ ] With the menu open, `docker run --rm -d nginx` in a shell adds the container to the open menu, and an
       open container submenu stays open.

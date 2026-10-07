@@ -41,6 +41,7 @@ let package = Package(
             dependencies: [
                 "ColimaFeatures",
                 "ColimaDomain",
+                "ColimaUI",
                 .product(name: "SwiftTerm", package: "SwiftTerm"),
             ],
             swiftSettings: mainActorByDefault

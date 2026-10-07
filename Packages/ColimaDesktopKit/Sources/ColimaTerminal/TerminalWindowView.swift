@@ -1,21 +1,27 @@
 import AppKit
 import ColimaDomain
 import ColimaFeatures
+import ColimaUI
 import SwiftTerm
 import SwiftUI
 
 /// Terminal window: an embedded terminal plus a status bar with reconnect.
 public struct TerminalWindowView: View {
     @Bindable private var model: TerminalSessionModel
+    private let textStyle: () -> ConsoleTextStyle
 
     /// Creates the view; the session connects once the terminal has a size.
-    public init(model: TerminalSessionModel) {
+    ///
+    /// - Parameter textStyle: Font and line spacing of the terminal. Read during `body`, so a value from
+    ///   an observable object (the settings) updates the open window.
+    public init(model: TerminalSessionModel, textStyle: @escaping () -> ConsoleTextStyle = { .terminalDefault }) {
         self.model = model
+        self.textStyle = textStyle
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            ExecTerminalView(model: model)
+            ExecTerminalView(model: model, style: textStyle())
             if let status = statusText {
                 Divider()
                 HStack {
@@ -76,24 +82,32 @@ extension TerminalSessionModel {
 /// Hosts a SwiftTerm `TerminalView` and wires it to a `TerminalSessionModel`.
 struct ExecTerminalView: NSViewRepresentable {
     let model: TerminalSessionModel
+    let style: ConsoleTextStyle
 
     func makeCoordinator() -> Coordinator {
         Coordinator(model: model)
     }
 
     func makeNSView(context: Context) -> TerminalView {
-        let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        let view = TerminalView(frame: NSRect(x: 0, y: 0, width: 640, height: 400), font: font)
+        let view = ConsoleTerminalView(frame: NSRect(x: 0, y: 0, width: 640, height: 400), font: ConsoleFonts.font(for: style))
+        view.lineSpacing = style.lineHeight
+        context.coordinator.style = style
         view.terminalDelegate = context.coordinator
         view.optionAsMetaKey = true
-        view.nativeBackgroundColor = .textBackgroundColor
-        view.nativeForegroundColor = .textColor
+        view.configureNativeColors()
         view.setAccessibilityLabel("Terminal for \(model.containerName)")
         context.coordinator.attach(view)
         return view
     }
 
-    func updateNSView(_ view: TerminalView, context: Context) {}
+    // A new font or line spacing resizes the grid; SwiftTerm reports it through sizeChanged.
+    func updateNSView(_ view: TerminalView, context: Context) {
+        guard context.coordinator.style != style else { return }
+        context.coordinator.style = style
+        let font = ConsoleFonts.font(for: style)
+        if view.font != font { view.font = font }
+        if view.lineSpacing != style.lineHeight { view.lineSpacing = style.lineHeight }
+    }
 
     static func dismantleNSView(_ view: TerminalView, coordinator: Coordinator) {
         coordinator.detach()
@@ -102,6 +116,8 @@ struct ExecTerminalView: NSViewRepresentable {
     @MainActor
     final class Coordinator: @MainActor TerminalViewDelegate {
         private let model: TerminalSessionModel
+        /// Text style the view shows.
+        var style: ConsoleTextStyle?
         private weak var view: TerminalView?
         private var connectFallback: Task<Void, Never>?
 
@@ -176,6 +192,28 @@ struct ExecTerminalView: NSViewRepresentable {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(text, forType: .string)
             }
+        }
+    }
+}
+
+/// Terminal view whose default colors follow its window's light or dark appearance.
+///
+/// SwiftTerm turns the system text colors into fixed values when they are set, so they are set again
+/// whenever the appearance changes, resolved in the new appearance.
+final class ConsoleTerminalView: TerminalView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyAppearanceColors()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        applyAppearanceColors()
+    }
+
+    private func applyAppearanceColors() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            configureNativeColors()
         }
     }
 }
