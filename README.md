@@ -47,6 +47,7 @@ socket, so the docker CLI is not needed.
 - **Updates** through [Sparkle](https://sparkle-project.org): a daily background check, and new
   versions downloaded and installed in the background — on quit, or right away with **Restart to
   Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
+  After an update, a notification says which version runs now.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
 - **Colima Desktop window** (**Open Colima Desktop** in the menu): the same content as the menu,

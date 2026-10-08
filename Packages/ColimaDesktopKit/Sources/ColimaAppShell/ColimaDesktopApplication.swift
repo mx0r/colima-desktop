@@ -31,7 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
-        let store = AppStore(dependencies: LiveEnvironment.dependencies())
+        let dependencies = LiveEnvironment.dependencies()
+        let store = AppStore(dependencies: dependencies)
         // Debug builds do not update themselves: they would be offered the published release.
         let updater = SparkleUpdater.isEnabledForMainBundle
             ? SparkleUpdater(allowedChannels: { [weak store] in store?.settings.updateChannel.sparkleChannels ?? [] })
@@ -53,6 +54,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         observeAppearance(of: store)
         store.start()
+        // Updates install silently on quit; say so once the new version runs.
+        if let notice = LaunchVersion.recordAndCheck() {
+            let notifier = dependencies.notifier
+            Task { await notifier.post(title: notice.title, body: notice.body) }
+        }
     }
 
     /// Keeps open windows in step with the appearance settings.
