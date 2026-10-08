@@ -62,14 +62,26 @@ struct SharedContentTests {
         let stopped = Sample.container("db", state: .exited)
         var snapshot = runningSnapshot(containers: [running, stopped])
         #expect(ContainerCommands.available(for: running, in: snapshot) == ContainerCommands(
-            canStart: false, canStop: true, canRestart: true, canShowLogs: true, canOpenTerminal: true, canDelete: false, pending: nil
+            canStart: false, canStop: true, canRestart: true, canShowLogs: true, canOpenTerminal: true, canDelete: false, pending: nil, isAlive: true
         ))
         #expect(ContainerCommands.available(for: stopped, in: snapshot) == ContainerCommands(
-            canStart: true, canStop: false, canRestart: false, canShowLogs: true, canOpenTerminal: false, canDelete: true, pending: nil
+            canStart: true, canStop: false, canRestart: false, canShowLogs: true, canOpenTerminal: false, canDelete: true, pending: nil, isAlive: false
         ))
         snapshot.containerOperations[running.id] = .stop
         let busy = ContainerCommands.available(for: running, in: snapshot)
         #expect(!busy.canStop && !busy.canRestart && busy.pending == .stop)
+    }
+
+    @Test("The container toggle stops a live container and starts a stopped one")
+    func containerToggle() {
+        let running = Sample.container("web")
+        let stopped = Sample.container("db", state: .exited)
+        var snapshot = runningSnapshot(containers: [running, stopped])
+        #expect(ContainerCommands.available(for: running, in: snapshot).toggle == .stop)
+        #expect(ContainerCommands.available(for: stopped, in: snapshot).toggle == .start)
+        #expect(ContainerCommands.available(for: running, in: snapshot).canToggle)
+        snapshot.containerOperations[running.id] = .restart
+        #expect(!ContainerCommands.available(for: running, in: snapshot).canToggle)
     }
 
     @Test("The list state gives the menu's texts")
@@ -135,6 +147,20 @@ struct MainWindowModelTests {
         #expect(sut.groups.flatMap(\.containers).map(\.name) == ["cache"])
         sut.filter = "  "
         #expect(sut.groups.flatMap(\.containers).count == 3)
+    }
+
+    @Test("The VM toggle is Stop while Colima runs and Start otherwise; the list is flat in group order")
+    func vmToggleAndFlatList() async {
+        let containers = [Sample.container("web", project: "shop"), Sample.container("solo"), Sample.container("db", project: "shop")]
+        let h = await StoreHarness(containers: containers).started()
+        #expect(await eventually { h.store.snapshot.containers.count == 3 })
+        let sut = model(h)
+        #expect(sut.vmToggle == .stopVM)
+        #expect(sut.containers.map(\.name) == sut.groups.flatMap(\.containers).map(\.name))
+        #expect(sut.containers.last?.name == "solo")
+
+        let stopped = await StoreHarness(instances: [Sample.instance(status: .stopped)]).started()
+        #expect(model(stopped).vmToggle == .startVM)
     }
 
     @Test("Expanding loads details once; a state change loads them again")

@@ -55,6 +55,16 @@ public final class MainWindowModel {
         return ContainerGrouping.group(containers)
     }
 
+    /// The same containers as `groups`, in one list: projects together, standalone ones last.
+    public var containers: [Container] {
+        groups.flatMap(\.containers)
+    }
+
+    /// One button for the VM: Stop while it can be stopped, Start otherwise.
+    public var vmToggle: MainMenuCommand {
+        store.snapshot.lifecycle.canStop ? .stopVM : .startVM
+    }
+
     /// Profiles to pick from, including the selected one.
     public var profiles: [ProfileName] {
         var names = store.snapshot.profiles.map(\.profile)

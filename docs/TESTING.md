@@ -82,9 +82,11 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] Window: no window and no Dock icon after launch. **Open Colima Desktop** (between separators above
       Start) opens it, with a Dock icon; closing it removes the icon. The header shows the status, profile
       and VM buttons; New Container… opens that window.
-- [ ] Window list: grouped like the menu; the filter matches name, image and project. Row buttons start,
-      stop… and restart… (with the menu's confirmations), show logs and open a terminal; disabled ones
-      match the state. A row expands to facts, ports with Open, command, health, restarts, networks and
+- [ ] Window: the panes start at two thirds and one third; dragging the divider keeps that ratio when
+      the window resizes and on the next open. The list, not the filter field, has the focus on open.
+- [ ] Window list: one list in project order, with a project tag; the filter matches name, image and
+      project, and Escape clears it. Row buttons: start or stop (one toggle), restart… (with the menu's
+      confirmations), show logs, open terminal; disabled ones are dimmed. Right-click has every action. A row expands to facts, ports with Open, command, health, restarts, networks and
       mounts, and Delete… for stopped containers. Durations count up.
 - [ ] Window right side: Colima, VM usage, Docker and disk usage, kept fresh while the window is open
       (also with the menu closed).

@@ -50,9 +50,10 @@ socket, so the docker CLI is not needed.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
 - **Colima Desktop window** (**Open Colima Desktop** in the menu): the same content as the menu,
-  for long lists. On top, the Colima status, the profile and Start / Stop… / Restart… and New
-  Container…. On the left, the containers, filterable, with start, stop, restart, logs and
-  terminal buttons; a row expands to its details (also command, health, restarts, networks and
+  for long lists. On top, the Colima status, the profile, Start or Stop…, Restart… and New
+  Container…. On the left (two thirds at first; drag the divider), the containers, filterable,
+  with start/stop, restart, logs and terminal buttons and a right-click menu; a row expands to its
+  details (also command, health, restarts, networks and
   mounts). On the right, the environment: Colima, VM usage, Docker and its disk usage. The window
   has a menu bar with Colima and Container menus. The app has a Dock icon only while a window is
   open.

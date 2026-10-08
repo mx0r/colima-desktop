@@ -186,9 +186,11 @@ public struct ContainerCommands: Hashable, Sendable {
     public var canDelete: Bool
     /// Action in progress; it blocks the other actions.
     public var pending: ContainerAction?
+    /// Whether the container runs (or is paused or restarting).
+    public var isAlive: Bool
 
     /// Creates a value.
-    public init(canStart: Bool, canStop: Bool, canRestart: Bool, canShowLogs: Bool, canOpenTerminal: Bool, canDelete: Bool, pending: ContainerAction?) {
+    public init(canStart: Bool, canStop: Bool, canRestart: Bool, canShowLogs: Bool, canOpenTerminal: Bool, canDelete: Bool, pending: ContainerAction?, isAlive: Bool) {
         self.canStart = canStart
         self.canStop = canStop
         self.canRestart = canRestart
@@ -196,7 +198,14 @@ public struct ContainerCommands: Hashable, Sendable {
         self.canOpenTerminal = canOpenTerminal
         self.canDelete = canDelete
         self.pending = pending
+        self.isAlive = isAlive
     }
+
+    /// One button for start and stop: stop while the container is alive, start otherwise.
+    public var toggle: ContainerAction { isAlive ? .stop : .start }
+
+    /// Whether the toggle can be used now.
+    public var canToggle: Bool { toggle == .stop ? canStop : canStart }
 
     /// Commands for a container in a snapshot.
     public static func available(for container: Container, in snapshot: AppSnapshot) -> ContainerCommands {
@@ -210,7 +219,8 @@ public struct ContainerCommands: Hashable, Sendable {
             canShowLogs: true,
             canOpenTerminal: container.state == .running,
             canDelete: idle && !alive,
-            pending: pending
+            pending: pending,
+            isAlive: alive
         )
     }
 }
