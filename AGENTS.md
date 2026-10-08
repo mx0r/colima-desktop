@@ -170,6 +170,24 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
   `true`): that stalls Sparkle's update cycle until the app relaunches, and Sparkle still installs
   on quit. The menu shows "Restart to Update to X" from `readyToInstallVersion`.
 - **Read plists with `plutil -extract … raw`, not `defaults read`**, which can answer from a cache.
+- **Only one copy runs per user** (`SingleInstance`, checked before `NSApplication.run()`). Debug and
+  Release builds share the bundle ID, so a Debug build started next to the installed app quits at
+  once; `make run` stops the running copy first. A second start shows the running copy's main window.
+- **The update notice compares build numbers** recorded at each launch (`LastLaunchedVersion` in the
+  app's defaults; only builds with the updater record). Updates install silently on quit, so the
+  notice is how the user learns about one.
+- **Quit asks only through the router** (status menu, ⌘Q). Never move the question into
+  `applicationShouldTerminate`: Sparkle's install-and-relaunch, logout and shutdown terminate the app
+  too, and must not wait for a dialog.
+- **The menu and the main window share their content builders** (`ColimaFeatures/Overview/SharedContent.swift`).
+  Change status texts, information rows, container facts or command rules there, not in one view.
+- **A pull with an empty `tag` pulls every tag of the repository.** `ImageReference.pullParameters`
+  always sends a digest, the tag, or `latest`.
+- **Pull errors can come inside a 200 response** (as an `error` message once the pull started);
+  `pullImage` turns them into `DockerError.pullFailed`. A cancelled `AsyncThrowingStream` ends without
+  an error, so the view model checks for cancellation after the loop.
+- **Image tags are not in the Engine API.** The Docker Hub catalog reads them from hub.docker.com;
+  other registries have no search (OCI distribution spec) and are typed by name.
 
 ## Verifying changes
 

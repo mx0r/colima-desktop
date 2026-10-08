@@ -70,6 +70,48 @@ output cannot deadlock it. It terminates the process on cancellation and timeout
 GUI apps start with a minimal `PATH`. The child `PATH` gets the colima directory and the usual install
 locations prepended.
 
+## Container durations
+
+`GET /containers/json` has no start or finish time, only Docker's rounded text ("Up 2 hours"). `AppStore`
+inspects each container once for `StartedAt` and `FinishedAt` and caches them with the state it saw; it
+inspects again when the state changes or a Docker event names the container (a restart keeps "running"). A
+failed inspect is cached as unknown, and Docker's text is shown then. `Format.status(of:now:)` swaps Docker's
+duration for an exact one, keeping its prefix and suffix ("Exited (0) … ago", "(healthy)"). While the menu is
+open, `StatusItemController` rebuilds it every second so the durations count up.
+
+## Launch
+
+`ColimaDesktopApplication.run()` first checks for another running copy with the same bundle ID
+(`NSRunningApplication`). `SingleInstancePolicy` keeps the oldest copy: a newer one posts a distributed
+notification and returns before `NSApplication.run()`, so it never shows an icon. The running copy opens its
+main window when it gets the notification, and on a reopen (Finder, Spotlight) while no window is open. No
+window opens at a normal launch.
+
+## Quitting
+
+Quit (the status menu, ⌘Q) goes through `ActionRouter`. `QuitDecision` asks only while the selected VM runs:
+`QuitConfirmation` offers Quit, Stop Colima and Quit, or Cancel, with "Don't ask again", which stores the
+answer in `AppSettings.rememberedChoices` (Settings → Reset Confirmations clears it). Stop Colima and Quit
+waits for `AppStore.stopVMAndWait()` before it terminates. Quits that do not come through the router (the
+Dock while a window is open, logout, Sparkle installing an update) do not ask.
+
+## Main window
+
+`MainWindowView` / `MainWindowModel` show what the menu shows. Both read shared, pure builders in
+`ColimaFeatures/Overview/SharedContent.swift`, so they cannot disagree:
+
+- `StatusSummary` (the status line), `InformationSections` (the Information submenu and the window's right
+  side), `ContainerFacts` (a container's first facts), `ContainerCommands` (what a container allows now),
+  `ContainerListState` (why there is no list).
+- `MainMenuState` maps the menu bar's commands (Colima and Container menus) to `MenuAction`s or nil
+  (disabled); Container commands act on the window's selected container.
+
+Actions from the window go through `ActionRouter.handle`, so confirmations are the same as in the menu. The
+store refreshes for every visible viewer (`LiveViewer.menu`, `.mainWindow`): live refreshes while either is
+open, VM usage and engine facts while the Information submenu or the window is open. An expanded container
+reads its inspect details, again when its state or start time changes. Durations in the window count up
+with a one-second `TimelineView`.
+
 ## Windows
 
 `WindowManager` hosts SwiftUI views in `NSWindow`s and remembers frames per window kind. While any window is
@@ -94,3 +136,9 @@ line height. The views read it from the settings during `body`, so open windows 
   batched every 100 ms.
 - **Terminal:** SwiftTerm `TerminalView` fed by a Docker exec session. Input is serialized through an
   `AsyncStream`, and resizes are debounced.
+- **New Container:** `NewContainerViewModel` searches every enabled `ImageCatalog` after a pause in typing,
+  loads the tags of the chosen image, and validates `ContainerForm` into a `ContainerSpec`. Creating runs
+  create → (404: pull, create again) → start, with the pull's `PullProgress` in the window; Cancel stops the
+  pull. Image sources are a setting (`imageSources`); `ActionRouter` builds a catalog per enabled kind. The
+  only kind is Docker Hub (`DockerHubCatalog`: search through the engine's `ImageSearching`, tags over HTTPS
+  from hub.docker.com). A new registry is a new `ImageSourceKind` and an `ImageCatalog` implementation.

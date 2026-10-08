@@ -10,26 +10,43 @@ make test-live    # plus live integration tests (COLIMA_DESKTOP_IT=1)
 Swift Testing, one target per layer:
 
 - **ColimaDomainTests:** lifecycle reducer tables, grouping, ports, path resolution, settings decoding
-  (including appearance and console text styles, clamped to their ranges).
+  (including appearance and console text styles, clamped to their ranges, and image sources), image
+  references, search ranking, tag platforms, pull progress, shell-word splitting and container names.
 - **ColimaInfrastructureTests:**
   - Process runner, including a >1 MB output deadlock regression, cancellation, timeout and grandchildren.
   - colima output parsing against fixtures captured from a real installation.
   - HTTP framing (whole, byte-by-byte and random splits) and log demuxing.
-  - The Docker client against an in-memory transport (requests, errors, streaming logs, exec hijack, events).
+  - The Docker client against an in-memory transport (requests, errors, streaming logs, exec hijack, events,
+    image search, pull streams including errors inside the stream, container create bodies).
+  - The Docker Hub catalog against a recorded tag page (platforms, 404, 429, other registries).
   - File watcher and settings store.
 - **ColimaFeaturesTests:**
   - `AppStore` with fakes and a `ManualClock`: refresh tiers, debouncing, profile switches, stale-result
     dropping, operations, notifications.
-  - Menu model scenarios.
+  - Menu model scenarios, including the Ports and Containers submenus.
+  - The update notice (newer build, same, downgrade, first launch, first version that records).
+  - The quit decision, remembered answers and their reset, and stopping Colima before quitting.
+  - Shared menu and window content (status, information sections, container facts and commands), the menu
+    bar's command state, the main window model (filter, details loading, actions), and live refreshes for
+    several viewers.
+  - Duration and status formatting; run times read by inspect once per container and state, and again
+    after an event.
+  - Which copy keeps running when several start (`SingleInstancePolicy`).
   - Logs, terminal and settings view models.
+  - The New Container form's validation and its view model (debounced search, tags, pull on 404, always
+    pull, start failure, cancel).
 - **ColimaUITests:** `MenuRenderer` reconciliation on real `NSMenu` objects (identity is kept, items move and
   are removed), status icons, confirmation texts, console fonts (fallback, row height) and the appearance
   mapping.
 - **ColimaIntegrationTests:** only with `COLIMA_DESKTOP_IT=1`. They need the default profile running with
   Docker and read real colima and Docker state. The exec test runs `echo` in the first running container.
+  The new-container test searches Docker Hub, reads hello-world's tags, pulls `hello-world`, creates and
+  starts a `colima-desktop-it-…` container and removes it.
 
 Fixtures in `Tests/ColimaInfrastructureTests/Fixtures` were captured with colima 0.10.3 and Docker 29.5.2
-(API 1.54). Container environment variables were removed.
+(API 1.54). Container environment variables were removed. `images-search.json`, `pull-up-to-date.bin` and
+`hub-tags-redis.json` are recorded too; `pull-layers.synthetic.ndjson` is written by hand in the engine's
+message format, because a real pull of an uncached image varies too much to record.
 
 ## Manual checklist
 
@@ -46,6 +63,46 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] Settings → Terminal and Logs: font, size and line height change open windows at once. The
       terminal keeps working after a change (the TTY gets the new size). A font that was uninstalled shows
       "(not installed)" and the window uses the system monospaced font.
+- [ ] New Container… (menu, while Docker runs): typing "redis" lists Docker Hub results after a pause,
+      official first; choosing one fills the image and the tag menu lists recent tags. A tag without an
+      image for the VM's architecture is marked, and the form warns.
+- [ ] Create with a port, a variable and a volume under the home folder: an image that is not there is
+      pulled with progress, then the container appears in the menu and runs (`docker inspect` shows the
+      port, variable and bind). Show Logs and Open Terminal work. Cancel during a pull stops it.
+- [ ] Invalid fields (empty image, bad name, `70000` as a port, relative container path) show their
+      messages only after Create, and nothing is created. A name already in use shows Docker's message.
+- [ ] An image from another registry by name (for example `ghcr.io/…`) creates without a tag list.
+      Settings → Image sources → Docker Hub off: the window says no source is on, and typing a name still
+      works.
+- [ ] One copy: with the app running, open it again from Finder, and open another copy (a Debug build, or
+      `open -n`). No second icon appears, and the running copy shows its window.
+- [ ] After Sparkle installs an update (or a newer release build replaces the app), the next launch posts
+      "Colima Desktop updated" with the new version; the launch after that, and Debug builds, post nothing.
+- [ ] Quit (menu or ⌘Q) while Colima runs asks: Quit leaves Colima running; Stop Colima and Quit stops it
+      (the icon shows the stop), then quits; Cancel keeps the app. With "Don't ask again", the next quit
+      does the same without asking; Settings → General → Reset Confirmations brings the question back.
+      With Colima stopped, quit does not ask.
+- [ ] Window: no window and no Dock icon after launch. **Open Colima Desktop** (between separators above
+      Start) opens it, with a Dock icon; closing it removes the icon. The header shows the status, profile
+      and VM buttons; New Container… opens that window.
+- [ ] Window: the panes start at two thirds and one third; dragging the divider keeps that ratio when
+      the window resizes and on the next open. The list, not the filter field, has the focus on open.
+- [ ] Window list: one list in project order, with a project tag; the filter matches name, image and
+      project, and Escape clears it. Row buttons: start or stop (one toggle), restart… (with the menu's
+      confirmations), show logs, open terminal; disabled ones are dimmed. Right-click has every action. A row expands to facts, ports with Open, command, health, restarts, networks and
+      mounts, and Delete… for stopped containers. Durations count up.
+- [ ] Window right side: Colima, VM usage, Docker and disk usage, kept fresh while the window is open
+      (also with the menu closed).
+- [ ] Menu bar (window active): Colima → Start / Stop… / Restart… / Refresh follow the VM state; Container
+      → items act on the selected row and follow its state; ⌘L logs, ⌘T terminal, ⌘N New Container…;
+      Window → Colima Desktop (⌘0).
+- [ ] Durations: a container started a minute ago shows `Up 1m 5s` and counts up while the menu is open;
+      exited ones show `Exited (0) 3h 8m ago`; the Created row ends in `(… ago)` in the same style. After
+      `docker restart`, the uptime starts again from 0s.
+- [ ] A container with several published ports has a **Ports (N)** submenu with copyable rows and Open items;
+      a container with one port shows it inline, as before.
+- [ ] With seven or more containers, the list sits in a **Containers (x of y running)** submenu; with six or
+      fewer it is inline.
 - [ ] `colima stop` / `colima start` in a shell updates the icon without opening the menu.
 - [ ] With the menu open, `docker run --rm -d nginx` in a shell adds the container to the open menu, and an
       open container submenu stays open.

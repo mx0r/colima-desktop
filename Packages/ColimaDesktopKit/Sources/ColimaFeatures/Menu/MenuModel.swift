@@ -155,6 +155,12 @@ public enum MenuAction: Hashable, Sendable {
     case openTerminal(containerID: String, name: String)
     case openURL(URL)
     case container(ContainerAction, containerID: String, name: String)
+    /// Opens the New Container window.
+    case newContainer
+    /// Opens the main window.
+    case openMainWindow
+    /// Refreshes the VM and container state now.
+    case refresh
     case showSettings
     case showAbout
     /// Shows the updater: a check, or the update found in the background.

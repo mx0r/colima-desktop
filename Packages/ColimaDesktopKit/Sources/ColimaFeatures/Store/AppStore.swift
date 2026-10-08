@@ -23,7 +23,10 @@ public final class AppStore {
     @ObservationIgnored private var paths: ColimaPaths
     @ObservationIgnored private var engine: (any DockerEngine)?
     @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var isMenuOpen = false
+    /// Views that want live refreshes (the open menu, the main window).
+    @ObservationIgnored private var liveViewers: Set<LiveViewer> = []
+    /// Views that show VM usage and engine facts (the information submenu, the main window).
+    @ObservationIgnored private var informationViewers: Set<LiveViewer> = []
     @ObservationIgnored private var lastRefresh: ContinuousClock.Instant?
 
     @ObservationIgnored private let refreshFlight = SingleFlight()
@@ -37,6 +40,16 @@ public final class AppStore {
     @ObservationIgnored private var informationTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     @ObservationIgnored private var operationTask: Task<Void, Never>?
+    /// Start and finish times by container ID, with the state they were read in. The container list
+    /// does not include them, so they come from inspect: once per container, and again when its
+    /// state changes or a Docker event names it (a restart keeps the state "running").
+    @ObservationIgnored private var runTimes: [String: RunTimes] = [:]
+
+    private struct RunTimes {
+        var state: ContainerState
+        var startedAt: Date?
+        var finishedAt: Date?
+    }
 
     /// Debounce for file system changes.
     static let fileChangeDebounce = Duration.milliseconds(250)
@@ -92,6 +105,13 @@ public final class AppStore {
     /// Starts, stops or restarts the selected VM. Ignored when not allowed in the current state.
     public func requestVMOperation(_ operation: VMOperation) {
         handle(.requested(operation))
+    }
+
+    /// Stops the selected VM and returns once the stop has ended (succeeded or failed); at once when it
+    /// cannot be stopped now. Used before quitting.
+    public func stopVMAndWait() async {
+        requestVMOperation(.stop)
+        await operationTask?.value
     }
 
     /// Starts, stops, restarts or deletes a container. Deleting requires a stopped container.
@@ -160,33 +180,57 @@ public final class AppStore {
 
     /// Call when the status menu opens: refreshes if stale and keeps refreshing while open.
     public func menuWillOpen() {
-        isMenuOpen = true
+        beginLiveUpdates(.menu)
+    }
+
+    /// Call when the status menu closed.
+    public func menuDidClose() {
+        endLiveUpdates(.menu)
+        endInformationUpdates(.menu)
+    }
+
+    /// Call when the information submenu opens: loads usage data and keeps it fresh while open.
+    public func informationMenuWillOpen() {
+        beginInformationUpdates(.menu)
+    }
+
+    /// Call when the information submenu closed.
+    public func informationMenuDidClose() {
+        endInformationUpdates(.menu)
+    }
+
+    /// A view became visible that shows live state: refreshes if stale, then every `liveInterval`
+    /// until the last such view is gone.
+    public func beginLiveUpdates(_ viewer: LiveViewer) {
         if let lastRefresh, ContinuousClock.now - lastRefresh < .seconds(1) {
             // Fresh enough.
         } else {
             Task { await refresh() }
         }
+        guard liveViewers.insert(viewer).inserted, liveViewers.count == 1 else { return }
         liveTask?.cancel()
         liveTask = repeating(every: Self.liveInterval) { store in await store.refresh() }
     }
 
-    /// Call when the status menu closed.
-    public func menuDidClose() {
-        isMenuOpen = false
+    /// A live view went away.
+    public func endLiveUpdates(_ viewer: LiveViewer) {
+        guard liveViewers.remove(viewer) != nil, liveViewers.isEmpty else { return }
         liveTask?.cancel()
         liveTask = nil
-        informationMenuDidClose()
     }
 
-    /// Call when the information submenu opens: loads usage data and keeps it fresh while open.
-    public func informationMenuWillOpen() {
-        informationTask?.cancel()
+    /// A view became visible that shows VM usage and engine facts: loads them, then every
+    /// `informationInterval` until the last such view is gone.
+    public func beginInformationUpdates(_ viewer: LiveViewer) {
         Task { await refreshInformation() }
+        guard informationViewers.insert(viewer).inserted, informationViewers.count == 1 else { return }
+        informationTask?.cancel()
         informationTask = repeating(every: Self.informationInterval) { store in await store.refreshInformation() }
     }
 
-    /// Call when the information submenu closed.
-    public func informationMenuDidClose() {
+    /// An information view went away.
+    public func endInformationUpdates(_ viewer: LiveViewer) {
+        guard informationViewers.remove(viewer) != nil, informationViewers.isEmpty else { return }
         informationTask?.cancel()
         informationTask = nil
     }
@@ -286,7 +330,9 @@ public final class AppStore {
         do {
             let containers = try await engine.containers()
             guard generation == self.generation else { return }
-            snapshot.containers = containers
+            let timed = await addRunTimes(to: containers, engine: engine)
+            guard generation == self.generation else { return }
+            snapshot.containers = timed
             snapshot.docker = .reachable
         } catch {
             guard generation == self.generation else { return }
@@ -304,8 +350,9 @@ public final class AppStore {
             var backoff = Duration.seconds(1)
             while !Task.isCancelled {
                 do {
-                    for try await _ in engine.events() {
+                    for try await event in engine.events() {
                         backoff = .seconds(1)
+                        self?.runTimes[event.actorID] = nil
                         self?.scheduleRefresh(after: Self.dockerEventDebounce)
                     }
                 } catch {}
@@ -317,9 +364,38 @@ public final class AppStore {
         }
     }
 
+    /// The containers with their start and finish times; inspects only those not cached for their state.
+    /// A failed inspect is cached too (as unknown), so it is not repeated on every refresh.
+    private func addRunTimes(to containers: [Container], engine: any DockerEngine) async -> [Container] {
+        let stale = containers.filter { runTimes[$0.id]?.state != $0.state }
+        if !stale.isEmpty {
+            let fetched = await withTaskGroup(of: (String, RunTimes).self) { group in
+                for container in stale {
+                    group.addTask {
+                        let details = try? await engine.inspect(containerID: container.id)
+                        return (container.id, RunTimes(state: container.state, startedAt: details?.startedAt, finishedAt: details?.finishedAt))
+                    }
+                }
+                var result: [String: RunTimes] = [:]
+                for await (id, times) in group { result[id] = times }
+                return result
+            }
+            runTimes.merge(fetched) { $1 }
+        }
+        let ids = Set(containers.map(\.id))
+        runTimes = runTimes.filter { ids.contains($0.key) }
+        return containers.map { container in
+            var container = container
+            container.startedAt = runTimes[container.id]?.startedAt
+            container.finishedAt = runTimes[container.id]?.finishedAt
+            return container
+        }
+    }
+
     private func disconnectDocker() {
         eventsTask?.cancel()
         eventsTask = nil
+        runTimes = [:]
         engine = nil
         snapshot.details = nil
         snapshot.docker = .notApplicable
@@ -421,7 +497,7 @@ public final class AppStore {
         heartbeatTask?.cancel()
         let interval = Duration.seconds(max(5, settings.heartbeatSeconds))
         heartbeatTask = repeating(every: interval) { store in
-            if !store.isMenuOpen { await store.refresh() }
+            if store.liveViewers.isEmpty { await store.refresh() }
         }
     }
 
@@ -489,4 +565,10 @@ extension ContainerAction {
         case .remove: "delete"
         }
     }
+}
+
+/// A view that shows live state and keeps the store refreshing while it is visible.
+public enum LiveViewer: Hashable, Sendable {
+    case menu
+    case mainWindow
 }

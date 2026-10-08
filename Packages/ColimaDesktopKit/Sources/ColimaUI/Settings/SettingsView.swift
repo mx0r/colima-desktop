@@ -17,6 +17,7 @@ public struct SettingsView: View {
             appearanceSection
             colimaSection
             socketSection
+            imageSourcesSection
             generalSection
             if model.hasUpdater { updatesSection }
             terminalSection
@@ -112,6 +113,20 @@ public struct SettingsView: View {
         }
     }
 
+    private var imageSourcesSection: some View {
+        Section {
+            ForEach($model.draft.imageSources, id: \.kind) { $source in
+                Toggle(source.kind.displayName, isOn: $source.isEnabled)
+            }
+        } header: {
+            Text("Image sources")
+        } footer: {
+            Text("New Container… searches these. Images from other public registries work by name, for example ghcr.io/owner/app. Private registries are not supported yet.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var generalSection: some View {
         Section("General") {
             Toggle("Launch at login", isOn: Binding(
@@ -144,6 +159,15 @@ public struct SettingsView: View {
                 Text("Every minute").tag(60)
                 Text("Every 5 minutes").tag(300)
             }
+            LabeledContent("Confirmations") {
+                Button("Reset Confirmations") { model.resetConfirmations() }
+                    .disabled(!model.hasRememberedChoices)
+            }
+            Text(model.hasRememberedChoices
+                ? "Questions you answered with \"Don't ask again\" show again after a reset."
+                : "No question is set to \"Don't ask again\".")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 

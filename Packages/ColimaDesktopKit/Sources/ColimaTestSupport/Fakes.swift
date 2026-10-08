@@ -105,6 +105,28 @@ public final class FakeDockerEngine: DockerEngine {
         )
         public var execCommands: [[String]] = []
         public var logRequests: [LogOptions] = []
+        /// Answer to every image search.
+        public var searchResults: [ImageSearchResult] = []
+        /// Fails image searches when set.
+        public var searchError: DockerError?
+        /// Search terms asked for, in order.
+        public var searchTerms: [String] = []
+        /// Messages every pull yields.
+        public var pullMessages: [PullMessage] = []
+        /// Fails pulls after their messages when set.
+        public var pullError: DockerError?
+        /// Keeps pulls open after their messages until the consumer cancels.
+        public var pullHangs = false
+        /// Images pulled, in order.
+        public var pulls: [ImageReference] = []
+        /// Answers to container creates, used in order; when empty, creates succeed with ID "new1".
+        public var createResults: [Result<CreatedContainer, DockerError>] = []
+        /// Specs of container creates, in order.
+        public var createdSpecs: [ContainerSpec] = []
+        /// Inspect answers by container ID; others fail with 404.
+        public var details: [String: ContainerDetails] = [:]
+        /// Container IDs inspected, in order.
+        public var inspectCalls: [String] = []
 
         public init() {}
     }
@@ -161,7 +183,12 @@ public final class FakeDockerEngine: DockerEngine {
     }
 
     public func inspect(containerID: String) async throws -> ContainerDetails {
-        throw DockerError.api(status: 404, message: "not scripted")
+        let details = state.withLock { state in
+            state.inspectCalls.append(containerID)
+            return state.details[containerID]
+        }
+        guard let details else { throw DockerError.api(status: 404, message: "not scripted") }
+        return details
     }
 
     public func perform(_ action: ContainerAction, containerID: String) async throws {
@@ -188,6 +215,39 @@ public final class FakeDockerEngine: DockerEngine {
     public func exec(containerID: String, command: [String], size: TerminalSize) async throws -> any ExecSession {
         state.withLock { $0.execCommands.append(command) }
         return execSession
+    }
+
+    public func searchImages(term: String, limit: Int) async throws -> [ImageSearchResult] {
+        try checkReachable()
+        return try state.withLock { state in
+            state.searchTerms.append(term)
+            if let error = state.searchError { throw error }
+            return state.searchResults
+        }
+    }
+
+    public func pullImage(_ reference: ImageReference) -> AsyncThrowingStream<PullMessage, Error> {
+        let (messages, error, hangs) = state.withLock { state in
+            state.pulls.append(reference)
+            return (state.pullMessages, state.pullError, state.pullHangs)
+        }
+        let (stream, continuation) = AsyncThrowingStream.makeStream(of: PullMessage.self)
+        for message in messages { continuation.yield(message) }
+        if let error {
+            continuation.finish(throwing: error)
+        } else if !hangs {
+            continuation.finish()
+        }
+        return stream
+    }
+
+    public func createContainer(_ spec: ContainerSpec) async throws -> CreatedContainer {
+        try checkReachable()
+        let result: Result<CreatedContainer, DockerError> = state.withLock { state in
+            state.createdSpecs.append(spec)
+            return state.createResults.isEmpty ? .success(CreatedContainer(id: "new1", warnings: [])) : state.createResults.removeFirst()
+        }
+        return try result.get()
     }
 }
 
@@ -332,6 +392,20 @@ final class Gate: Sendable {
 
 /// Sample values for tests.
 public enum Sample {
+    /// Inspect details for a sample container.
+    public static func containerDetails(
+        _ container: Container,
+        state: ContainerState? = nil,
+        startedAt: Date? = nil,
+        finishedAt: Date? = nil
+    ) -> ContainerDetails {
+        ContainerDetails(
+            id: container.id, name: container.name, image: container.image, tty: false, command: ["sh"],
+            state: state ?? container.state, startedAt: startedAt, finishedAt: finishedAt, exitCode: nil,
+            health: nil, restartCount: 0, platform: "linux", networks: [:], mounts: []
+        )
+    }
+
     public static func instance(_ name: String = "default", status: VMStatus = .running) -> ColimaInstance {
         ColimaInstance(profile: ProfileName(name), status: status, arch: "aarch64", cpus: 4, memoryBytes: 8 << 30, diskBytes: 100 << 30, runtime: "docker")
     }
@@ -380,5 +454,52 @@ public final class Locked<Value: Sendable>: Sendable {
     @discardableResult
     public func withLock<R: Sendable>(_ body: (inout Value) -> R) -> R {
         mutex.withLock { body(&$0) }
+    }
+}
+
+/// Scriptable image catalog.
+public final class FakeImageCatalog: ImageCatalog {
+    public struct State: Sendable {
+        /// Answer to every search.
+        public var results: [ImageSearchResult] = []
+        /// Fails searches when set.
+        public var searchError: ImageCatalogError?
+        /// Tags by repository; references without an entry belong to another registry (nil).
+        public var tags: [String: [ImageTag]] = [:]
+        /// Fails tag loads when set.
+        public var tagsError: ImageCatalogError?
+        /// Search terms asked for, in order.
+        public var searches: [String] = []
+        /// Repositories whose tags were asked for, in order.
+        public var tagRequests: [String] = []
+
+        public init() {}
+    }
+
+    public let name: String
+    private let state: Mutex<State>
+
+    public init(name: String = "Docker Hub", _ state: State = State()) {
+        self.name = name
+        self.state = Mutex(state)
+    }
+
+    public func update(_ change: (inout State) -> Void) { state.withLock { change(&$0) } }
+    public var current: State { state.withLock { $0 } }
+
+    public func search(_ term: String, limit: Int) async throws -> [ImageSearchResult] {
+        try state.withLock { state in
+            state.searches.append(term)
+            if let error = state.searchError { throw error }
+            return state.results
+        }
+    }
+
+    public func tags(of reference: ImageReference) async throws -> [ImageTag]? {
+        try state.withLock { state in
+            state.tagRequests.append(reference.repository)
+            if let error = state.tagsError { throw error }
+            return state.tags[reference.repository]
+        }
     }
 }

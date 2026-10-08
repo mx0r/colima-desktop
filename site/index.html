@@ -24,7 +24,7 @@
   <header class="hero">
     <div class="hero__copy">
       <img class="hero__icon" src="assets/icon.png" width="96" height="96" alt="">
-      <p class="eyebrow">macOS 26+ · Apple silicon &amp; Intel · v0.7</p>
+      <p class="eyebrow">macOS 26+ · Apple silicon &amp; Intel · v0.8</p>
       <h1>Colima,<br>from the menu bar.</h1>
       <p class="lede">
         Start and stop the VM, switch profiles, and reach every container — its logs, a shell,
@@ -34,14 +34,14 @@
 
       <div class="actions">
         <a class="btn btn--primary"
-           href="https://github.com/mx0r/colima-desktop/releases/download/v0.7/ColimaDesktop-0.7.dmg">
-          Download 0.7
+           href="https://github.com/mx0r/colima-desktop/releases/download/v0.8/ColimaDesktop-0.8.dmg">
+          Download 0.8
         </a>
         <a class="btn" href="https://github.com/mx0r/colima-desktop">View on GitHub</a>
       </div>
 
       <p class="note">
-        ColimaDesktop-0.7.dmg ·
+        ColimaDesktop-0.8.dmg ·
         <a href="https://github.com/mx0r/colima-desktop/releases">all releases</a>
       </p>
 
@@ -61,6 +61,8 @@
           <li><span class="ico">ⓘ</span>Information<span class="more">›</span></li>
           <li><span class="ico">≋</span>Profile: default<span class="more">›</span></li>
           <li class="sep"></li>
+          <li><span class="ico">▣</span>Open Colima Desktop</li>
+          <li class="sep"></li>
           <li class="off"><span class="ico">▶</span>Start</li>
           <li><span class="ico">■</span>Stop…</li>
           <li><span class="ico">↻</span>Restart…</li>
@@ -68,20 +70,20 @@
           <li class="head">Containers (4 of 5 running)</li>
           <li class="head">localdb</li>
           <li class="ind"><span class="dot"></span>
-            <span class="two">localdb-db-1<span class="sub">Up 2 hours · postgres:17</span></span>
+            <span class="two">localdb-db-1<span class="sub">Up 2h 14m · postgres:17</span></span>
             <span class="more">›</span></li>
           <li class="head">rabbitmq</li>
           <li class="ind"><span class="dot"></span>
-            <span class="two">rabbitmq-rabbitmq-1<span class="sub">Up 2 hours · rabbitmq:4-management</span></span>
+            <span class="two">rabbitmq-rabbitmq-1<span class="sub">Up 2h 14m · rabbitmq:4-management</span></span>
             <span class="more">›</span></li>
           <li class="head">redis</li>
           <li class="ind hl has-sub"><span class="dot"></span>
-            <span class="two">redis-cache-1<span class="sub">Up 2 hours · redis:8.0-alpine</span></span>
+            <span class="two">redis-cache-1<span class="sub">Up 2h 13m · redis:8.0-alpine</span></span>
             <span class="more">›</span>
             <div class="menu menu--sub">
               <ul>
                 <li>Image: redis:8.0-alpine</li>
-                <li>Status: Up 2 hours</li>
+                <li>Status: Up 2h 13m</li>
                 <li>ID: e6d0e29c9f85</li>
                 <li>Service: cache</li>
                 <li>Ports: 6379→6379/tcp</li>
@@ -100,8 +102,10 @@
           </li>
           <li class="head">Other</li>
           <li class="ind dim"><span class="dot dot--grey"></span>
-            <span class="two">wizardly_burnell<span class="sub">Exited (0) 3 hours ago</span></span>
+            <span class="two">wizardly_burnell<span class="sub">Exited (0) 3h 8m ago</span></span>
             <span class="more">›</span></li>
+          <li class="sep"></li>
+          <li><span class="ico">⊕</span>New Container…</li>
           <li class="sep"></li>
           <li>Settings…<span class="key">⌘,</span></li>
           <li>About Colima Desktop</li>
@@ -122,7 +126,10 @@
     <div class="spec__item">
       <p class="label">Every container, grouped</p>
       <p>Running and stopped, grouped by Compose project. Each one has its details, logs, a shell,
-        its published ports, start, stop and restart — and delete, once it is stopped.</p>
+        its published ports, start, stop and restart — and delete, once it is stopped.
+        <strong>New Container…</strong> finds an image on Docker Hub and runs it with your ports,
+        variables and volumes. For long lists, the Colima Desktop window shows the same, with
+        a filter.</p>
     </div>
     <div class="spec__item">
       <p class="label">Logs that keep up</p>
@@ -201,11 +208,12 @@
         Once a day, Colima Desktop checks for a new version with
         <a href="https://sparkle-project.org">Sparkle</a>, downloads it in the background and
         installs it the next time the app quits. To have it now, choose
-        <strong>Restart to Update to 0.7</strong> in the menu. No window opens on its own.
+        <strong>Restart to Update to 0.8</strong> in the menu. No window opens on its own; once
+        the new version runs, a notification says so.
       </p>
       <p>
         <strong>Check for Updates…</strong> asks right away. Settings → Updates turns off the
-        background download — the menu then offers <strong>Update to 0.7…</strong> instead — or the
+        background download — the menu then offers <strong>Update to 0.8…</strong> instead — or the
         daily check altogether, and switches the update channel to <strong>Beta</strong> for
         pre-release versions. Every release is signed with the project's update key, and the app
         refuses an update whose signature does not match the key it ships with.
@@ -216,12 +224,12 @@
     </div>
     <!-- An illustration of the menu's last items with an update waiting, not a screenshot. -->
     <figure class="menu-shot" role="img"
-            aria-label="Illustration of the bottom of the Colima Desktop menu offering Restart to Update to 0.7">
+            aria-label="Illustration of the bottom of the Colima Desktop menu offering Restart to Update to 0.8">
       <div class="menu" aria-hidden="true">
         <ul>
           <li>Settings…<span class="key">⌘,</span></li>
           <li>About Colima Desktop</li>
-          <li class="hl"><span class="ico">⬇</span>Restart to Update to 0.7</li>
+          <li class="hl"><span class="ico">⬇</span>Restart to Update to 0.8</li>
           <li class="sep"></li>
           <li>Quit Colima Desktop<span class="key">⌘Q</span></li>
         </ul>

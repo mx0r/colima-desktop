@@ -39,9 +39,9 @@ struct MenuModelBuilderTests {
     func topLevelOrder() {
         let ids = MenuModelBuilder.build(snapshot(), updates: .check, now: now).map(\.id)
         #expect(ids == [
-            "status", MenuNodeID.information, "profiles", "sep.vm",
+            "status", MenuNodeID.information, "profiles", "sep.open", "open", "sep.vm",
             "vm.start", "vm.stop", "vm.restart", "sep.containers",
-            "containers.empty", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
+            "containers.empty", "sep.new", "containers.new", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
         ])
     }
 
@@ -126,6 +126,74 @@ struct MenuModelBuilderTests {
         #expect(node("containers.unreachable", in: nodes)?.subtitle == "refused")
     }
 
+    @Test("Status and created rows show split durations")
+    func durations() throws {
+        var web = Sample.container("web")
+        web.startedAt = now.addingTimeInterval(-3725)
+        let nodes = MenuModelBuilder.build(snapshot(containers: [web]), now: now)
+        let row = try #require(node(web.prefixID, in: nodes))
+        #expect(row.subtitle == "Up 1h 2m · web:latest")
+        #expect(node("\(web.prefixID).status", in: nodes)?.title == "Status: Up 1h 2m")
+        let created = try #require(node("\(web.prefixID).created", in: nodes))
+        #expect(created.title.hasSuffix("(\(Format.duration(now.timeIntervalSince(web.created))) ago)"))
+    }
+
+    @Test("One port stays inline; more ports get their own submenu")
+    func portsSubmenu() throws {
+        let one = Sample.container("one", ports: [PublishedPort(privatePort: 80, publicPort: 8080, proto: "tcp")])
+        let many = Sample.container("many", ports: [
+            PublishedPort(privatePort: 80, publicPort: 8080, proto: "tcp"),
+            PublishedPort(privatePort: 443, publicPort: 8443, proto: "tcp"),
+            PublishedPort(privatePort: 53, publicPort: 5353, proto: "udp"),
+        ])
+        let nodes = MenuModelBuilder.build(snapshot(containers: [one, many]), now: now)
+
+        let inline = try #require(node(one.prefixID, in: nodes)?.children)
+        #expect(inline.contains { $0.id == "\(one.prefixID).ports" && $0.children == nil })
+        #expect(inline.contains { $0.id == "\(one.prefixID).open.8080" })
+
+        let children = try #require(node(many.prefixID, in: nodes)?.children)
+        #expect(!children.contains { $0.id.hasPrefix("\(many.prefixID).open.") })
+        let ports = try #require(children.first { $0.id == "\(many.prefixID).ports" })
+        #expect(ports.title == "Ports (3)")
+        let submenu = try #require(ports.children)
+        #expect(submenu.map(\.title).prefix(3) == ["8080→80/tcp", "8443→443/tcp", "5353→53/udp"])
+        #expect(submenu.first?.action == .copy("8080→80/tcp"))
+        #expect(submenu.filter { $0.action.map { if case .openURL = $0 { true } else { false } } ?? false }.map(\.title) == ["Open localhost:8080", "Open localhost:8443"])
+    }
+
+    @Test("Up to six containers are listed inline; more go into a Containers submenu")
+    func containersSubmenu() throws {
+        let six = (1...6).map { Sample.container("c\($0)") }
+        let inline = MenuModelBuilder.build(snapshot(containers: six), now: now)
+        #expect(node("containers.menu", in: inline) == nil)
+        #expect(inline.contains { $0.id == six[0].prefixID })
+
+        let seven = six + [Sample.container("c7", state: .exited)]
+        let nodes = MenuModelBuilder.build(snapshot(containers: seven), now: now)
+        #expect(!nodes.contains { $0.id == seven[0].prefixID })
+        let menu = try #require(nodes.first { $0.id == "containers.menu" })
+        #expect(menu.title == "Containers (6 of 7 running)")
+        let children = try #require(menu.children)
+        #expect(children.contains { $0.id == seven[6].prefixID })
+        #expect(nodes.contains { $0.id == "containers.new" })
+    }
+
+    @Test("New Container… is offered while Docker is reachable, and only then")
+    func newContainer() throws {
+        let nodes = MenuModelBuilder.build(snapshot(containers: [Sample.container("web")]), now: now)
+        let item = try #require(node("containers.new", in: nodes))
+        #expect(item.title == "New Container…")
+        #expect(item.image == .symbol("plus.circle"))
+        // Set apart from the container list by a separator.
+        let index = try #require(nodes.firstIndex { $0.id == "containers.new" })
+        #expect(nodes[index - 1].kind == .separator)
+        #expect(item.action == .newContainer)
+        #expect(!MenuAction.newContainer.needsConfirmation)
+        #expect(node("containers.new", in: MenuModelBuilder.build(snapshot(docker: .unreachable("refused")), now: now)) == nil)
+        #expect(node("containers.new", in: MenuModelBuilder.build(snapshot(status: .stopped), now: now)) == nil)
+    }
+
     @Test("Containers are grouped by project with headers, stopped ones dimmed")
     func containerGroups() throws {
         let containers = [
@@ -137,7 +205,7 @@ struct MenuModelBuilderTests {
         let section = nodes.drop { $0.id != "sep.containers" }.dropFirst().prefix { $0.id != "sep.app" }
         #expect(section.map(\.id) == [
             "containers.header", "group.project:shop", containers[0].prefixID, containers[1].prefixID,
-            "group.standalone", containers[2].prefixID,
+            "group.standalone", containers[2].prefixID, "sep.new", "containers.new",
         ])
         #expect(section.first?.title == "Containers (2 of 3 running)")
 

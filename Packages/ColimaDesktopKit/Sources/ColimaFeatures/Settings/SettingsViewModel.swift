@@ -108,6 +108,15 @@ public final class SettingsViewModel {
         applyNow()
     }
 
+    /// Whether any confirmation answer is remembered ("Don't ask again").
+    public var hasRememberedChoices: Bool { !draft.rememberedChoices.isEmpty }
+
+    /// Forgets every remembered confirmation answer, so the confirmations show again. Applied at once.
+    public func resetConfirmations() {
+        draft.rememberedChoices = RememberedChoices()
+        applyNow()
+    }
+
     /// Sets or clears the socket override for a profile.
     public func setSocketOverride(_ text: String, for profile: ProfileName) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
