@@ -15,7 +15,8 @@ Swift Testing, one target per layer:
 - **ColimaInfrastructureTests:**
   - Process runner, including a >1 MB output deadlock regression, cancellation, timeout and grandchildren.
   - colima output parsing against fixtures captured from a real installation.
-  - HTTP framing (whole, byte-by-byte and random splits) and log demuxing.
+  - HTTP framing (whole, byte-by-byte and random splits) and log demuxing; escape codes removed from log
+    lines, also when a chunk splits a sequence (`TerminalEscapes` itself is tested in ColimaDomainTests).
   - The Docker client against an in-memory transport (requests, errors, streaming logs, exec hijack, events,
     image search, pull streams including errors inside the stream, container create bodies).
   - The Docker Hub catalog against a recorded tag page (platforms, 404, 429, other registries).
@@ -112,6 +113,7 @@ Run the app (`make run`, or `make install` for launch at login) and check:
 - [ ] Profile switch: containers and information change to the other profile.
 - [ ] Logs: follow, pause ("N new lines"), filter with highlighting, timestamps toggle, marker (⌘M),
       copy (⌘⇧C), save (⌘S), clear (⌘K). Scrolling up pauses following.
+- [ ] Logs of a container with colored output (RabbitMQ, for example) show no `[38;5;214m` or `[0m`.
 - [ ] Logs under load: run `yes | head -n 2000000` in a container and check that the window stays responsive.
 - [ ] Logs after the container stops: banner with Reconnect.
 - [ ] Terminal: `vim` and `htop` render correctly, resizing the window resizes the TTY, `exit` shows the exit

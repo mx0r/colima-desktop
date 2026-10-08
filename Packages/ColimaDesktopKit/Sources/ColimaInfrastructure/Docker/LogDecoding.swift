@@ -100,7 +100,8 @@ public struct LogLineAssembler: Sendable {
             timestamp = date
             content = content[(space + 1)...]
         }
-        return LogLine(stream: stream, timestamp: timestamp, text: String(decoding: content, as: UTF8.self))
+        // Colored output would show its escape codes as text ("[38;5;214m").
+        return LogLine(stream: stream, timestamp: timestamp, text: TerminalEscapes.strip(String(decoding: content, as: UTF8.self)))
     }
 }
 
