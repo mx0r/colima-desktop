@@ -156,6 +156,56 @@
 
   <section class="feature">
     <div class="feature__copy">
+      <p class="eyebrow">The menu</p>
+      <h2>Everything one click from the menu bar.</h2>
+      <p>
+        The status row says whether Colima runs, with the profile and its CPUs, memory and
+        architecture. <strong>Information</strong> shows the VM's load, memory and disks and
+        Docker's engine facts and disk usage; click a row to copy it.
+        <strong>Start</strong>, <strong>Stop…</strong> and <strong>Restart…</strong> control the
+        VM, and stopping or restarting asks first.
+      </p>
+      <p>
+        Each container has its own submenu: image, status, ID and ports, then
+        <strong>Logs…</strong>, <strong>Terminal…</strong>, <strong>Open localhost:PORT</strong>,
+        and start, stop, restart or delete. Durations count up while the menu is open.
+        <strong>New Container…</strong> creates one from an image on Docker Hub, and
+        <strong>Open Colima Desktop</strong> opens the window.
+      </p>
+    </div>
+    <figure class="shot">
+      <img src="assets/screenshot-menu.webp" width="550" height="576" loading="lazy"
+           alt="The Colima Desktop menu with the status row, Information, Profile, Open Colima Desktop, the VM actions and four containers; the submenu of localdb-db-1 shows its image, status, ID, ports, Logs, Terminal, Open localhost:5432, Stop, Restart and Delete">
+    </figure>
+  </section>
+
+  <section class="showcase">
+    <div class="showcase__head">
+      <p class="eyebrow">The window</p>
+      <h2>The same, in a window, for long lists.</h2>
+    </div>
+    <div class="showcase__copy">
+      <p>
+        On the left, the containers: filter by name, image or project, start or stop, restart,
+        open the logs or a terminal. A row expands to its ports, command, health, restarts,
+        networks and mounts, and right-click has every action. On top, the Colima status, the
+        profile, the VM's controls and a button for a new container.
+      </p>
+      <p>
+        On the right, the environment: Colima, VM usage, Docker and its disk usage, kept fresh
+        while the window is open. The window has its own menu bar (<code>⌘L</code> logs,
+        <code>⌘T</code> terminal, <code>⌘N</code> new container). Open it from the menu, or by
+        starting Colima Desktop again; it has a Dock icon only while it is open.
+      </p>
+    </div>
+    <figure class="shot shot--window">
+      <img src="assets/screenshot-window.webp" width="906" height="598" loading="lazy"
+           alt="The Colima Desktop window: a filterable list of four containers with start, stop, restart, logs and terminal buttons, localdb-db-1 expanded to its details, and on the right the Colima, VM usage, Docker and disk usage facts">
+    </figure>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
       <p class="eyebrow">Menu bar icon</p>
       <h2>The llama tells you how the VM is doing.</h2>
       <p>
@@ -176,28 +226,48 @@
     </figure>
   </section>
 
-  <section class="feature">
-    <div class="feature__copy">
+  <section class="showcase">
+    <div class="showcase__head">
       <p class="eyebrow">Logs</p>
       <h2>Drop a marker, then watch what happens next.</h2>
+    </div>
+    <div class="showcase__copy">
       <p>
         <strong>Marker</strong> (<code>⌘M</code>) writes a timestamped line into the log, so the
         output of the request you are about to make starts right below it. Scrolling up pauses
         following; the status bar counts what arrived meanwhile.
       </p>
       <p>
-        The filter matches as you type and keeps markers visible. Copy and Save export exactly
-        the lines on screen. When the container stops, the window says so and offers to
-        reconnect from where it left off.
+        The filter matches as you type and keeps markers visible. Lines the container writes
+        to stderr show in red. Copy and Save export exactly the lines on screen. When the
+        container stops, the window says so and offers to reconnect from where it left off.
       </p>
     </div>
-    <!-- An illustration of the logs window's content, not a screenshot. -->
-    <pre class="terminal" role="img" aria-label="Illustration of container log lines with a marker line"><span class="t">2026-10-06 10:41:02.118</span>  Ready to accept connections
-<span class="t">2026-10-06 10:41:07.904</span>  Accepted 172.17.0.1:52114
-<span class="t">2026-10-06 10:41:09.412</span>  <span class="mark">──── Marker 10:41:09 ────</span>
-<span class="t">2026-10-06 10:41:11.003</span>  GET /api/orders 200 14ms
-<span class="t">2026-10-06 10:41:11.257</span>  <span class="err">slow query 212ms</span>
-<span class="t">2026-10-06 10:41:11.260</span>  GET /api/orders/42 200 9ms</pre>
+    <figure class="shot">
+      <img src="assets/screenshot-logs.webp" width="1080" height="696" loading="lazy"
+           alt="The logs window of rabbitmq-rabbitmq-1 in dark appearance, following RabbitMQ's startup output with timestamps, the filter field and the follow, marker, timestamps and more buttons">
+    </figure>
+  </section>
+
+  <section class="feature">
+    <div class="feature__copy">
+      <p class="eyebrow">Terminal</p>
+      <h2>A shell in the container, in its own window.</h2>
+      <p>
+        <strong>Terminal…</strong> opens a shell through the Engine API's exec endpoint: bash
+        when the image has it, otherwise sh, or a command you set in Settings. Full-screen
+        programs such as vim and htop work, the TTY follows the window's size, and when the
+        shell exits, <strong>Reconnect</strong> opens a new one.
+      </p>
+      <p>
+        The terminal and the logs each have their own font, size, line height and appearance
+        (System, Light or Dark), apart from the rest of the app.
+      </p>
+    </div>
+    <figure class="shot">
+      <img src="assets/screenshot-terminal.webp" width="550" height="364" loading="lazy"
+           alt="A terminal window for rabbitmq-rabbitmq-1 showing the container's environment variables and a root prompt">
+    </figure>
   </section>
 
   <section class="feature">

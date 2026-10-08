@@ -276,6 +276,28 @@ main { max-width: var(--page); margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.
 
 .icons img { border-radius: var(--radius); }
 
+/* --- screenshots --------------------------------------------------------- */
+
+.shot { margin: 0; }
+.shot img { display: block; width: 100%; height: auto; }
+
+/* The menu, logs and terminal shots carry macOS's own shadow; the window shot was cut out without
+   one, so the page draws it, following its rounded corners. */
+.shot--window img {
+  border-radius: 11px;
+  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0, 0, 0, 0.08), 0 28px 60px -28px rgba(0, 0, 0, 0.45);
+}
+
+.showcase { padding: var(--section) 0; border-top: 1px solid var(--line); }
+.showcase__head h2 { margin-bottom: 1.1rem; }
+.showcase__copy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+.showcase__copy p { margin: 0; color: var(--muted); }
+
 .legend {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -346,7 +368,8 @@ main { max-width: var(--page); margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 2.
 
 @media (max-width: 860px) {
   .hero,
-  .feature { grid-template-columns: minmax(0, 1fr); }
+  .feature,
+  .showcase__copy { grid-template-columns: minmax(0, 1fr); }
 
   .hero { padding-top: 2.5rem; }
   .menu--sub { display: none; }
