@@ -12,6 +12,8 @@ final class ActionRouter {
     private let windows: WindowManager
     private let loginItem: any LoginItemControlling
     private let updater: (any UpdateControlling)?
+    /// The open main window's model; the menu bar's Container commands act on its selection.
+    private(set) var mainWindowModel: MainWindowModel?
 
     init(store: AppStore, windows: WindowManager, loginItem: any LoginItemControlling, updater: (any UpdateControlling)?) {
         self.store = store
@@ -46,6 +48,10 @@ final class ActionRouter {
             store.performContainerAction(containerAction, containerID: containerID)
         case .newContainer:
             showNewContainer()
+        case .openMainWindow:
+            showMainWindow()
+        case .refresh:
+            Task { await store.refresh() }
         case .showSettings:
             showSettings()
         case .showAbout:
@@ -98,6 +104,31 @@ final class ActionRouter {
             role: .console(.terminal),
             onClose: { model.close() },
             content: { [store] in TerminalWindowView(model: model, textStyle: { store.settings.terminalText }) }
+        )
+    }
+
+    /// The action of a menu bar command now; container commands act on the main window's selection.
+    func menuBarAction(for command: MainMenuCommand) -> MenuAction? {
+        MainMenuState.action(for: command, snapshot: store.snapshot, selectedContainerID: mainWindowModel?.selectedContainerID)
+    }
+
+    /// Opens the main window, or brings it to the front.
+    func showMainWindow() {
+        guard !windows.focus("main") else { return }
+        let model = MainWindowModel(store: store, onAction: { [weak self] action in self?.handle(action) })
+        mainWindowModel = model
+        model.appear()
+        windows.show(
+            id: "main",
+            title: "Colima Desktop",
+            size: NSSize(width: 1080, height: 680),
+            autosaveName: "MainWindow",
+            minSize: NSSize(width: 820, height: 480),
+            onClose: { [weak self] in
+                model.disappear()
+                self?.mainWindowModel = nil
+            },
+            content: { MainWindowView(model: model) }
         )
     }
 

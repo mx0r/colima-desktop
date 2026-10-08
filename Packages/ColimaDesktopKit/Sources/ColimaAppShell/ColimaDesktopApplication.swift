@@ -78,15 +78,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
-    /// Opening the app again (Finder, Spotlight) while no window is open shows the menu.
+    /// Opening the app again (Finder, Spotlight) while no window is open shows the main window,
+    /// which works even when the menu bar hides the status item.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !flag { statusItem?.showMenu() }
+        if !flag { router?.showMainWindow() }
         return true
     }
 
-    /// Another copy was started and quit; show where this one is.
+    /// Another copy was started and quit; show this one's main window.
     @objc private func anotherCopyLaunched(_ notification: Notification) {
-        statusItem?.showMenu()
+        router?.showMainWindow()
     }
 }
 
@@ -111,6 +112,27 @@ enum MainMenu {
         appMenu.addItem(item("Quit Colima Desktop", #selector(NSApplication.terminate(_:)), key: "q"))
         main.addItem(submenu("Colima Desktop", appMenu))
 
+        let colima = NSMenu(title: "Colima")
+        colima.addItem(command("Start", .startVM))
+        colima.addItem(command("Stop…", .stopVM))
+        colima.addItem(command("Restart…", .restartVM))
+        colima.addItem(.separator())
+        colima.addItem(command("Refresh", .refresh))
+        main.addItem(submenu("Colima", colima))
+
+        let container = NSMenu(title: "Container")
+        container.addItem(command("Start", .startContainer))
+        container.addItem(command("Stop…", .stopContainer))
+        container.addItem(command("Restart…", .restartContainer))
+        container.addItem(.separator())
+        container.addItem(command("Show Logs", .showLogs, key: "l"))
+        container.addItem(command("Open Terminal", .openTerminal, key: "t"))
+        container.addItem(.separator())
+        container.addItem(command("Delete…", .deleteContainer))
+        container.addItem(.separator())
+        container.addItem(command("New Container…", .newContainer, key: "n"))
+        main.addItem(submenu("Container", container))
+
         let edit = NSMenu(title: "Edit")
         edit.addItem(item("Undo", Selector(("undo:")), key: "z"))
         edit.addItem(item("Redo", Selector(("redo:")), key: "Z"))
@@ -122,6 +144,8 @@ enum MainMenu {
         main.addItem(submenu("Edit", edit))
 
         let window = NSMenu(title: "Window")
+        window.addItem(item("Colima Desktop", #selector(MenuTarget.showMainWindow), key: "0", target: MenuTarget.shared))
+        window.addItem(.separator())
         window.addItem(item("Minimize", #selector(NSWindow.performMiniaturize(_:)), key: "m"))
         window.addItem(item("Close", #selector(NSWindow.performClose(_:)), key: "w"))
         main.addItem(submenu("Window", window))
@@ -135,6 +159,13 @@ enum MainMenu {
         return item
     }
 
+    /// An item for a menu bar command; enabled from the current state (`MenuTarget.validateMenuItem`).
+    private static func command(_ title: String, _ command: MainMenuCommand, key: String = "") -> NSMenuItem {
+        let item = item(title, #selector(MenuTarget.runCommand(_:)), key: key, target: MenuTarget.shared)
+        item.tag = MainMenuCommand.allCases.firstIndex(of: command) ?? -1
+        return item
+    }
+
     private static func submenu(_ title: String, _ menu: NSMenu) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         menu.title = title
@@ -143,8 +174,26 @@ enum MainMenu {
     }
 
     /// Target for app menu items that need the router.
-    final class MenuTarget: NSObject {
+    final class MenuTarget: NSObject, NSMenuItemValidation {
         static let shared = MenuTarget()
+
+        /// Runs a menu bar command (the item's tag indexes `MainMenuCommand.allCases`).
+        @objc func runCommand(_ sender: NSMenuItem) {
+            guard let action = action(for: sender) else { return }
+            MainMenu.router?.handle(action)
+        }
+
+        @objc func showMainWindow() { MainMenu.router?.showMainWindow() }
+
+        func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+            guard menuItem.action == #selector(runCommand(_:)) else { return true }
+            return action(for: menuItem) != nil
+        }
+
+        private func action(for item: NSMenuItem) -> MenuAction? {
+            guard let router = MainMenu.router, MainMenuCommand.allCases.indices.contains(item.tag) else { return nil }
+            return router.menuBarAction(for: MainMenuCommand.allCases[item.tag])
+        }
 
         @objc func showAbout() { MainMenu.router?.handle(.showAbout) }
         @objc func showSettings() { MainMenu.router?.handle(.showSettings) }

@@ -53,16 +53,6 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         }
     }
 
-    /// Opens the menu, for example when the app is launched a second time. Deferred to the run loop:
-    /// opening a menu inside a main-queue job would stall MainActor tasks while it is open.
-    public func showMenu() {
-        perform(#selector(openMenuNow), with: nil, afterDelay: 0)
-    }
-
-    @objc private func openMenuNow() {
-        statusItem.button?.performClick(nil)
-    }
-
     private func observe() {
         observationTask = Task { [weak self, store, updater] in
             let changes = Observations {

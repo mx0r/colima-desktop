@@ -172,7 +172,9 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
 - **Read plists with `plutil -extract … raw`, not `defaults read`**, which can answer from a cache.
 - **Only one copy runs per user** (`SingleInstance`, checked before `NSApplication.run()`). Debug and
   Release builds share the bundle ID, so a Debug build started next to the installed app quits at
-  once; `make run` stops the running copy first.
+  once; `make run` stops the running copy first. A second start shows the running copy's main window.
+- **The menu and the main window share their content builders** (`ColimaFeatures/Overview/SharedContent.swift`).
+  Change status texts, information rows, container facts or command rules there, not in one view.
 - **A pull with an empty `tag` pulls every tag of the repository.** `ImageReference.pullParameters`
   always sends a digest, the tag, or `latest`.
 - **Pull errors can come inside a 200 response** (as an `error` message once the pull started);

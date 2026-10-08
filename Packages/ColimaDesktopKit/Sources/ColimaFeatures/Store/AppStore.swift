@@ -23,7 +23,10 @@ public final class AppStore {
     @ObservationIgnored private var paths: ColimaPaths
     @ObservationIgnored private var engine: (any DockerEngine)?
     @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var isMenuOpen = false
+    /// Views that want live refreshes (the open menu, the main window).
+    @ObservationIgnored private var liveViewers: Set<LiveViewer> = []
+    /// Views that show VM usage and engine facts (the information submenu, the main window).
+    @ObservationIgnored private var informationViewers: Set<LiveViewer> = []
     @ObservationIgnored private var lastRefresh: ContinuousClock.Instant?
 
     @ObservationIgnored private let refreshFlight = SingleFlight()
@@ -170,33 +173,57 @@ public final class AppStore {
 
     /// Call when the status menu opens: refreshes if stale and keeps refreshing while open.
     public func menuWillOpen() {
-        isMenuOpen = true
+        beginLiveUpdates(.menu)
+    }
+
+    /// Call when the status menu closed.
+    public func menuDidClose() {
+        endLiveUpdates(.menu)
+        endInformationUpdates(.menu)
+    }
+
+    /// Call when the information submenu opens: loads usage data and keeps it fresh while open.
+    public func informationMenuWillOpen() {
+        beginInformationUpdates(.menu)
+    }
+
+    /// Call when the information submenu closed.
+    public func informationMenuDidClose() {
+        endInformationUpdates(.menu)
+    }
+
+    /// A view became visible that shows live state: refreshes if stale, then every `liveInterval`
+    /// until the last such view is gone.
+    public func beginLiveUpdates(_ viewer: LiveViewer) {
         if let lastRefresh, ContinuousClock.now - lastRefresh < .seconds(1) {
             // Fresh enough.
         } else {
             Task { await refresh() }
         }
+        guard liveViewers.insert(viewer).inserted, liveViewers.count == 1 else { return }
         liveTask?.cancel()
         liveTask = repeating(every: Self.liveInterval) { store in await store.refresh() }
     }
 
-    /// Call when the status menu closed.
-    public func menuDidClose() {
-        isMenuOpen = false
+    /// A live view went away.
+    public func endLiveUpdates(_ viewer: LiveViewer) {
+        guard liveViewers.remove(viewer) != nil, liveViewers.isEmpty else { return }
         liveTask?.cancel()
         liveTask = nil
-        informationMenuDidClose()
     }
 
-    /// Call when the information submenu opens: loads usage data and keeps it fresh while open.
-    public func informationMenuWillOpen() {
-        informationTask?.cancel()
+    /// A view became visible that shows VM usage and engine facts: loads them, then every
+    /// `informationInterval` until the last such view is gone.
+    public func beginInformationUpdates(_ viewer: LiveViewer) {
         Task { await refreshInformation() }
+        guard informationViewers.insert(viewer).inserted, informationViewers.count == 1 else { return }
+        informationTask?.cancel()
         informationTask = repeating(every: Self.informationInterval) { store in await store.refreshInformation() }
     }
 
-    /// Call when the information submenu closed.
-    public func informationMenuDidClose() {
+    /// An information view went away.
+    public func endInformationUpdates(_ viewer: LiveViewer) {
+        guard informationViewers.remove(viewer) != nil, informationViewers.isEmpty else { return }
         informationTask?.cancel()
         informationTask = nil
     }
@@ -463,7 +490,7 @@ public final class AppStore {
         heartbeatTask?.cancel()
         let interval = Duration.seconds(max(5, settings.heartbeatSeconds))
         heartbeatTask = repeating(every: interval) { store in
-            if !store.isMenuOpen { await store.refresh() }
+            if store.liveViewers.isEmpty { await store.refresh() }
         }
     }
 
@@ -531,4 +558,10 @@ extension ContainerAction {
         case .remove: "delete"
         }
     }
+}
+
+/// A view that shows live state and keeps the store refreshing while it is visible.
+public enum LiveViewer: Hashable, Sendable {
+    case menu
+    case mainWindow
 }
