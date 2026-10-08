@@ -56,6 +56,9 @@ socket, so the docker CLI is not needed.
   mounts). On the right, the environment: Colima, VM usage, Docker and its disk usage. The window
   has a menu bar with Colima and Container menus. The app has a Dock icon only while a window is
   open.
+- **Quitting** while Colima runs asks first: quitting the app leaves Colima and its containers
+  running, and **Stop Colima and Quit** stops it too. "Don't ask again" remembers the answer;
+  Settings → General → **Reset Confirmations** brings the question back.
 - **One copy at a time**: starting the app while it runs (another build, another folder, or a
   manual start next to the launch at login) shows the running copy's window, and the new copy
   quits. This also works when the menu bar hides the status item.

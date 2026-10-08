@@ -159,6 +159,15 @@ public struct SettingsView: View {
                 Text("Every minute").tag(60)
                 Text("Every 5 minutes").tag(300)
             }
+            LabeledContent("Confirmations") {
+                Button("Reset Confirmations") { model.resetConfirmations() }
+                    .disabled(!model.hasRememberedChoices)
+            }
+            Text(model.hasRememberedChoices
+                ? "Questions you answered with \"Don't ask again\" show again after a reset."
+                : "No question is set to \"Don't ask again\".")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 

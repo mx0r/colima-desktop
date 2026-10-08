@@ -109,7 +109,8 @@ enum MainMenu {
         appMenu.addItem(item("Settings…", #selector(MenuTarget.showSettings), key: ",", target: MenuTarget.shared))
         appMenu.addItem(.separator())
         appMenu.addItem(item("Hide Colima Desktop", #selector(NSApplication.hide(_:)), key: "h"))
-        appMenu.addItem(item("Quit Colima Desktop", #selector(NSApplication.terminate(_:)), key: "q"))
+        // Through the router, which asks whether to stop Colima too.
+        appMenu.addItem(item("Quit Colima Desktop", #selector(MenuTarget.quit), key: "q", target: MenuTarget.shared))
         main.addItem(submenu("Colima Desktop", appMenu))
 
         let colima = NSMenu(title: "Colima")
@@ -184,6 +185,7 @@ enum MainMenu {
         }
 
         @objc func showMainWindow() { MainMenu.router?.showMainWindow() }
+        @objc func quit() { MainMenu.router?.handle(.quit) }
 
         func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
             guard menuItem.action == #selector(runCommand(_:)) else { return true }

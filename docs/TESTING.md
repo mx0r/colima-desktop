@@ -24,6 +24,7 @@ Swift Testing, one target per layer:
   - `AppStore` with fakes and a `ManualClock`: refresh tiers, debouncing, profile switches, stale-result
     dropping, operations, notifications.
   - Menu model scenarios, including the Ports and Containers submenus.
+  - The quit decision, remembered answers and their reset, and stopping Colima before quitting.
   - Shared menu and window content (status, information sections, container facts and commands), the menu
     bar's command state, the main window model (filter, details loading, actions), and live refreshes for
     several viewers.
@@ -74,6 +75,10 @@ Run the app (`make run`, or `make install` for launch at login) and check:
       works.
 - [ ] One copy: with the app running, open it again from Finder, and open another copy (a Debug build, or
       `open -n`). No second icon appears, and the running copy shows its window.
+- [ ] Quit (menu or ⌘Q) while Colima runs asks: Quit leaves Colima running; Stop Colima and Quit stops it
+      (the icon shows the stop), then quits; Cancel keeps the app. With "Don't ask again", the next quit
+      does the same without asking; Settings → General → Reset Confirmations brings the question back.
+      With Colima stopped, quit does not ask.
 - [ ] Window: no window and no Dock icon after launch. **Open Colima Desktop** (between separators above
       Start) opens it, with a Dock icon; closing it removes the icon. The header shows the status, profile
       and VM buttons; New Container… opens that window.

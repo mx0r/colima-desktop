@@ -87,6 +87,14 @@ notification and returns before `NSApplication.run()`, so it never shows an icon
 main window when it gets the notification, and on a reopen (Finder, Spotlight) while no window is open. No
 window opens at a normal launch.
 
+## Quitting
+
+Quit (the status menu, ⌘Q) goes through `ActionRouter`. `QuitDecision` asks only while the selected VM runs:
+`QuitConfirmation` offers Quit, Stop Colima and Quit, or Cancel, with "Don't ask again", which stores the
+answer in `AppSettings.rememberedChoices` (Settings → Reset Confirmations clears it). Stop Colima and Quit
+waits for `AppStore.stopVMAndWait()` before it terminates. Quits that do not come through the router (the
+Dock while a window is open, logout, Sparkle installing an update) do not ask.
+
 ## Main window
 
 `MainWindowView` / `MainWindowModel` show what the menu shows. Both read shared, pure builders in

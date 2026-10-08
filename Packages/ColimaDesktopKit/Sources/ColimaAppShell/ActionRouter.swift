@@ -12,6 +12,8 @@ final class ActionRouter {
     private let windows: WindowManager
     private let loginItem: any LoginItemControlling
     private let updater: (any UpdateControlling)?
+    /// Set while Colima stops before quitting; a second quit then does nothing.
+    private var isStoppingForQuit = false
     /// The open main window's model; the menu bar's Container commands act on its selection.
     private(set) var mainWindowModel: MainWindowModel?
 
@@ -61,7 +63,7 @@ final class ActionRouter {
         case .installUpdate:
             updater?.installUpdateAndRelaunch()
         case .quit:
-            NSApp.terminate(nil)
+            quit()
         }
     }
 
@@ -105,6 +107,34 @@ final class ActionRouter {
             onClose: { model.close() },
             content: { [store] in TerminalWindowView(model: model, textStyle: { store.settings.terminalText }) }
         )
+    }
+
+    /// Quits; while Colima runs, asks first whether to stop it too (unless the answer is remembered).
+    private func quit() {
+        guard !isStoppingForQuit else { return }
+        switch QuitDecision.plan(snapshot: store.snapshot, settings: store.settings) {
+        case .quit:
+            NSApp.terminate(nil)
+        case .stopColimaThenQuit:
+            stopColimaThenQuit()
+        case .ask:
+            guard let answer = QuitConfirmation.ask(profile: store.snapshot.selectedProfile, appearance: store.settings.interfaceAppearance) else { return }
+            if answer.remember {
+                var settings = store.settings
+                settings.rememberedChoices.quit = answer.choice
+                store.updateSettings(settings)
+            }
+            if answer.choice == .stopColima { stopColimaThenQuit() } else { NSApp.terminate(nil) }
+        }
+    }
+
+    /// Stops Colima, then quits; the menu bar icon shows the stop meanwhile.
+    private func stopColimaThenQuit() {
+        isStoppingForQuit = true
+        Task {
+            await store.stopVMAndWait()
+            NSApp.terminate(nil)
+        }
     }
 
     /// The action of a menu bar command now; container commands act on the main window's selection.

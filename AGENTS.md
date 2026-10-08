@@ -173,6 +173,9 @@ in the Makefile, the scheme, the release scripts and `pkill -x`. Everything a us
 - **Only one copy runs per user** (`SingleInstance`, checked before `NSApplication.run()`). Debug and
   Release builds share the bundle ID, so a Debug build started next to the installed app quits at
   once; `make run` stops the running copy first. A second start shows the running copy's main window.
+- **Quit asks only through the router** (status menu, ⌘Q). Never move the question into
+  `applicationShouldTerminate`: Sparkle's install-and-relaunch, logout and shutdown terminate the app
+  too, and must not wait for a dialog.
 - **The menu and the main window share their content builders** (`ColimaFeatures/Overview/SharedContent.swift`).
   Change status texts, information rows, container facts or command rules there, not in one view.
 - **A pull with an empty `tag` pulls every tag of the repository.** `ImageReference.pullParameters`

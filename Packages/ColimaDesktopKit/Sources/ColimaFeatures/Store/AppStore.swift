@@ -107,6 +107,13 @@ public final class AppStore {
         handle(.requested(operation))
     }
 
+    /// Stops the selected VM and returns once the stop has ended (succeeded or failed); at once when it
+    /// cannot be stopped now. Used before quitting.
+    public func stopVMAndWait() async {
+        requestVMOperation(.stop)
+        await operationTask?.value
+    }
+
     /// Starts, stops, restarts or deletes a container. Deleting requires a stopped container.
     public func performContainerAction(_ action: ContainerAction, containerID: String) {
         guard let engine, snapshot.containerOperations[containerID] == nil else { return }
