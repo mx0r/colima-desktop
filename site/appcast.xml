@@ -4,6 +4,26 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.8</title>
+            <pubDate>Thu, 08 Oct 2026 07:14:16 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.8</sparkle:fullReleaseNotesLink>
+            <sparkle:version>46</sparkle:version>
+            <sparkle:shortVersionString>0.8</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **Colima Desktop window.** Open Colima Desktop in the menu shows the containers (filterable, with their actions and details) and the environment in one window, with a menu bar. Starting the app again shows it too.
+- **New Container…** in the menu: search Docker Hub, pick a tag, set the name, command, restart policy, ports, environment variables and volumes in a form, and create the container. A missing image is pulled with progress, and the logs and a terminal are one click away. Images from other public registries work by name; Settings → Image sources sets where to search.
+- **Quitting asks about Colima.** Quitting leaves Colima and its containers running; the app now says so and offers Stop Colima and Quit. "Don't ask again" remembers the answer, and Settings → General → Reset Confirmations brings the question back.
+- **Exact durations.** Uptime and other durations show their two largest units, such as 2d 4h, 3h 12m, 5m 30s or 42s, and count up while the menu is open.
+- **Tidier container menus.** A container with more than one port lists its ports in a Ports submenu, and more than six containers go into a Containers submenu.
+- **One copy at a time.** Starting the app again while it runs shows its window instead of adding a second icon.
+- **Update notice.** After an update installs, a notification says which version runs now.
+
+[All changes in 0.8 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.8)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.8/ColimaDesktop-0.8.dmg" length="7325099" type="application/octet-stream" sparkle:edSignature="HryQkhlz8YAQzkcs4+J+UucR2yr5Tlcvknk/EYnuUUgwUejNcShUoIhTBvqtbjXHYcSgpbE+nlHpNK3ArNDaBQ=="></enclosure>
+        </item>
+        <item>
             <title>0.8.0-beta.3</title>
             <pubDate>Thu, 08 Oct 2026 06:48:40 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
