@@ -39,7 +39,7 @@ struct MenuModelBuilderTests {
     func topLevelOrder() {
         let ids = MenuModelBuilder.build(snapshot(), updates: .check, now: now).map(\.id)
         #expect(ids == [
-            "status", MenuNodeID.information, "profiles", "sep.vm",
+            "status", MenuNodeID.information, "profiles", "sep.open", "open", "sep.vm",
             "vm.start", "vm.stop", "vm.restart", "sep.containers",
             "containers.empty", "sep.new", "containers.new", "sep.app", "settings", "about", "updates", "sep.quit", "quit",
         ])

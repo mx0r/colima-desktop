@@ -49,8 +49,20 @@ socket, so the docker CLI is not needed.
   Update to X** in the menu. With automatic installs off, the menu offers "Update to X…" instead.
   No window steals focus. **Check for Updates…** checks now; both switches are in Settings, next
   to the update channel: **Stable**, or **Beta** for pre-release versions too.
+- **Colima Desktop window** (**Open Colima Desktop** in the menu): the same content as the menu,
+  for long lists. On top, the Colima status, the profile, Start or Stop…, Restart… and New
+  Container…. On the left (two thirds at first; drag the divider), the containers, filterable,
+  with start/stop, restart, logs and terminal buttons and a right-click menu; a row expands to its
+  details (also command, health, restarts, networks and
+  mounts). On the right, the environment: Colima, VM usage, Docker and its disk usage. The window
+  has a menu bar with Colima and Container menus. The app has a Dock icon only while a window is
+  open.
+- **Quitting** while Colima runs asks first: quitting the app leaves Colima and its containers
+  running, and **Stop Colima and Quit** stops it too. "Don't ask again" remembers the answer;
+  Settings → General → **Reset Confirmations** brings the question back.
 - **One copy at a time**: starting the app while it runs (another build, another folder, or a
-  manual start next to the launch at login) opens the running copy's menu, and the new copy quits.
+  manual start next to the launch at login) shows the running copy's window, and the new copy
+  quits. This also works when the menu bar hides the status item.
 - **Settings**: menu bar icon style, appearance, image sources, launch at login, updates,
   notifications, refresh interval, terminal shell, log sizes, and overrides for everything
   detected automatically.

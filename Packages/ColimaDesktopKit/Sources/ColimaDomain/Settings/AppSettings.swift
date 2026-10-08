@@ -38,6 +38,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
     public var logsText: ConsoleTextStyle
     /// Where the New Container window searches for images.
     public var imageSources: [ImageSourceSetting]
+    /// Confirmation answers the user asked to remember.
+    public var rememberedChoices: RememberedChoices
 
     /// Settings with all values auto-detected.
     public static let defaults = AppSettings()
@@ -61,7 +63,8 @@ public struct AppSettings: Codable, Hashable, Sendable {
         logsAppearance: AppearanceMode = .system,
         terminalText: ConsoleTextStyle = .terminalDefault,
         logsText: ConsoleTextStyle = .logsDefault,
-        imageSources: [ImageSourceSetting] = ImageSourceSetting.defaults
+        imageSources: [ImageSourceSetting] = ImageSourceSetting.defaults,
+        rememberedChoices: RememberedChoices = RememberedChoices()
     ) {
         self.colimaExecutablePath = colimaExecutablePath
         self.colimaHomePath = colimaHomePath
@@ -81,6 +84,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         self.terminalText = terminalText
         self.logsText = logsText
         self.imageSources = ImageSourceSetting.normalized(imageSources)
+        self.rememberedChoices = rememberedChoices
     }
 
     // Tolerant decoding: missing keys fall back to defaults so stored settings survive app updates.
@@ -109,6 +113,7 @@ public struct AppSettings: Codable, Hashable, Sendable {
         logsText = (try? c.decodeIfPresent(ConsoleTextStyle.self, forKey: .logsText)) ?? d.logsText
         let sources = (try? c.decodeIfPresent([LossyImageSourceSetting].self, forKey: .imageSources))?.compactMap(\.value)
         imageSources = ImageSourceSetting.normalized(sources ?? d.imageSources)
+        rememberedChoices = (try? c.decodeIfPresent(RememberedChoices.self, forKey: .rememberedChoices)) ?? d.rememberedChoices
     }
 
     /// Image sources that are switched on, in their configured order.

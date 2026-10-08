@@ -84,8 +84,33 @@ open, `StatusItemController` rebuilds it every second so the durations count up.
 `ColimaDesktopApplication.run()` first checks for another running copy with the same bundle ID
 (`NSRunningApplication`). `SingleInstancePolicy` keeps the oldest copy: a newer one posts a distributed
 notification and returns before `NSApplication.run()`, so it never shows an icon. The running copy opens its
-menu when it gets the notification, and on a reopen (Finder, Spotlight) while no window is open. The menu is
-opened from the run loop (`perform(_:with:afterDelay:)`), never from a main-queue job.
+main window when it gets the notification, and on a reopen (Finder, Spotlight) while no window is open. No
+window opens at a normal launch.
+
+## Quitting
+
+Quit (the status menu, ⌘Q) goes through `ActionRouter`. `QuitDecision` asks only while the selected VM runs:
+`QuitConfirmation` offers Quit, Stop Colima and Quit, or Cancel, with "Don't ask again", which stores the
+answer in `AppSettings.rememberedChoices` (Settings → Reset Confirmations clears it). Stop Colima and Quit
+waits for `AppStore.stopVMAndWait()` before it terminates. Quits that do not come through the router (the
+Dock while a window is open, logout, Sparkle installing an update) do not ask.
+
+## Main window
+
+`MainWindowView` / `MainWindowModel` show what the menu shows. Both read shared, pure builders in
+`ColimaFeatures/Overview/SharedContent.swift`, so they cannot disagree:
+
+- `StatusSummary` (the status line), `InformationSections` (the Information submenu and the window's right
+  side), `ContainerFacts` (a container's first facts), `ContainerCommands` (what a container allows now),
+  `ContainerListState` (why there is no list).
+- `MainMenuState` maps the menu bar's commands (Colima and Container menus) to `MenuAction`s or nil
+  (disabled); Container commands act on the window's selected container.
+
+Actions from the window go through `ActionRouter.handle`, so confirmations are the same as in the menu. The
+store refreshes for every visible viewer (`LiveViewer.menu`, `.mainWindow`): live refreshes while either is
+open, VM usage and engine facts while the Information submenu or the window is open. An expanded container
+reads its inspect details, again when its state or start time changes. Durations in the window count up
+with a one-second `TimelineView`.
 
 ## Windows
 

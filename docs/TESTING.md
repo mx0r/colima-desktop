@@ -24,6 +24,10 @@ Swift Testing, one target per layer:
   - `AppStore` with fakes and a `ManualClock`: refresh tiers, debouncing, profile switches, stale-result
     dropping, operations, notifications.
   - Menu model scenarios, including the Ports and Containers submenus.
+  - The quit decision, remembered answers and their reset, and stopping Colima before quitting.
+  - Shared menu and window content (status, information sections, container facts and commands), the menu
+    bar's command state, the main window model (filter, details loading, actions), and live refreshes for
+    several viewers.
   - Duration and status formatting; run times read by inspect once per container and state, and again
     after an event.
   - Which copy keeps running when several start (`SingleInstancePolicy`).
@@ -70,7 +74,25 @@ Run the app (`make run`, or `make install` for launch at login) and check:
       Settings → Image sources → Docker Hub off: the window says no source is on, and typing a name still
       works.
 - [ ] One copy: with the app running, open it again from Finder, and open another copy (a Debug build, or
-      `open -n`). No second icon appears, and the running copy opens its menu.
+      `open -n`). No second icon appears, and the running copy shows its window.
+- [ ] Quit (menu or ⌘Q) while Colima runs asks: Quit leaves Colima running; Stop Colima and Quit stops it
+      (the icon shows the stop), then quits; Cancel keeps the app. With "Don't ask again", the next quit
+      does the same without asking; Settings → General → Reset Confirmations brings the question back.
+      With Colima stopped, quit does not ask.
+- [ ] Window: no window and no Dock icon after launch. **Open Colima Desktop** (between separators above
+      Start) opens it, with a Dock icon; closing it removes the icon. The header shows the status, profile
+      and VM buttons; New Container… opens that window.
+- [ ] Window: the panes start at two thirds and one third; dragging the divider keeps that ratio when
+      the window resizes and on the next open. The list, not the filter field, has the focus on open.
+- [ ] Window list: one list in project order, with a project tag; the filter matches name, image and
+      project, and Escape clears it. Row buttons: start or stop (one toggle), restart… (with the menu's
+      confirmations), show logs, open terminal; disabled ones are dimmed. Right-click has every action. A row expands to facts, ports with Open, command, health, restarts, networks and
+      mounts, and Delete… for stopped containers. Durations count up.
+- [ ] Window right side: Colima, VM usage, Docker and disk usage, kept fresh while the window is open
+      (also with the menu closed).
+- [ ] Menu bar (window active): Colima → Start / Stop… / Restart… / Refresh follow the VM state; Container
+      → items act on the selected row and follow its state; ⌘L logs, ⌘T terminal, ⌘N New Container…;
+      Window → Colima Desktop (⌘0).
 - [ ] Durations: a container started a minute ago shows `Up 1m 5s` and counts up while the menu is open;
       exited ones show `Exited (0) 3h 8m ago`; the Created row ends in `(… ago)` in the same style. After
       `docker restart`, the uptime starts again from 0s.
