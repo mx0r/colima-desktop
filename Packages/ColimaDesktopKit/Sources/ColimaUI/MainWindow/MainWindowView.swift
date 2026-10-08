@@ -190,8 +190,9 @@ private struct ContainerRow: View {
         let expanded = model.isExpanded(container.id)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
+                // No animation: list rows resize unevenly while animating.
                 Button {
-                    withAnimation(.snappy(duration: 0.2)) { model.toggleExpanded(container.id) }
+                    model.toggleExpanded(container.id)
                 } label: {
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.semibold))
@@ -305,7 +306,7 @@ private struct ContainerDetailsView: View {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 3) {
                     ForEach(ContainerFacts.rows(container, now: context.date)) { item in
-                        FactRow(label: item.label ?? "", value: item.value)
+                        DetailRow(label: item.label ?? "", lines: [item.value])
                     }
                     if !container.ports.isEmpty {
                         GridRow {
@@ -314,6 +315,7 @@ private struct ContainerDetailsView: View {
                                 ForEach(Array(container.ports.enumerated()), id: \.offset) { _, port in
                                     HStack(spacing: 6) {
                                         Text(port.displayText)
+                                            .lineLimit(1)
                                             .textSelection(.enabled)
                                         if let url = port.browsableURL {
                                             Button("Open") { model.perform(.openURL(url)) }
@@ -347,18 +349,41 @@ private struct ContainerDetailsView: View {
                     .controlSize(.small)
             }
         case .failed(let message):
-            FactRow(label: "Details", value: message)
+            DetailRow(label: "Details", lines: [message])
         case .loaded(let details):
-            FactRow(label: "Command", value: details.command.joined(separator: " "))
+            DetailRow(label: "Command", lines: [details.command.joined(separator: " ")])
             if let health = details.health {
-                FactRow(label: "Health", value: health)
+                DetailRow(label: "Health", lines: [health])
             }
-            FactRow(label: "Restarts", value: String(details.restartCount))
+            DetailRow(label: "Restarts", lines: [String(details.restartCount)])
             if !details.networks.isEmpty {
-                FactRow(label: "Networks", value: details.networks.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" }.joined(separator: "\n"))
+                DetailRow(label: "Networks", lines: details.networks.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" })
             }
             if !details.mounts.isEmpty {
-                FactRow(label: "Mounts", value: details.mounts.joined(separator: "\n"))
+                DetailRow(label: "Mounts", lines: details.mounts)
+            }
+        }
+    }
+}
+
+/// A fact in an expanded list row: one line per entry, truncated in the middle, the full text in a
+/// tooltip and selectable. Lines never wrap, so the list measures the row's height correctly; wrapped
+/// text made the row too short and ate its padding.
+private struct DetailRow: View {
+    let label: String
+    let lines: [String]
+
+    var body: some View {
+        GridRow {
+            FactLabel(text: label)
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                        .help(line)
+                }
             }
         }
     }
