@@ -67,6 +67,21 @@ struct LiveColimaTests {
         #expect(count <= 20)
     }
 
+    @Test("Log lines of running containers carry no terminal escape codes")
+    func logsWithoutEscapes() async throws {
+        let engine = try await docker()
+        var checked = 0
+        for container in try await engine.containers() where container.state == .running {
+            for try await batch in engine.logs(containerID: container.id, options: LogOptions(follow: false, tail: 300)) {
+                for line in batch {
+                    checked += 1
+                    #expect(!line.text.unicodeScalars.contains { $0 == "\u{1B}" || $0 == "\u{9B}" }, "\(container.name): \(line.text)")
+                }
+            }
+        }
+        print("log lines checked: \(checked)")
+    }
+
     @Test("Exec through the hijacked connection")
     func exec() async throws {
         let engine = try await docker()

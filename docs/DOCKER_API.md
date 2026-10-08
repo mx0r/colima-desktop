@@ -67,6 +67,9 @@ Errors arrive as `{"message": "…"}` and surface as `DockerError.api(status:mes
   content types fall back to `Config.Tty` from inspect.
 - **Timestamps:** lines start with an RFC 3339 timestamp (`timestamps=1`). The app parses and strips it, and
   the window can hide it.
+- **Escape codes:** programs that color their output (RabbitMQ, for example) write terminal escape sequences
+  into their logs. `TerminalEscapes.strip` removes them from every assembled line (CSI, OSC, short ESC
+  sequences, bells), so the table, Copy and Save show plain text.
 - **Exec:** `exec/{id}/start` is sent with `Connection: Upgrade` and `Upgrade: tcp`. The engine answers
   `101 UPGRADED`, and the socket then carries raw terminal bytes in both directions (`Tty: true`, no
   multiplexing). Bytes that arrive together with the response head are the first output bytes.
