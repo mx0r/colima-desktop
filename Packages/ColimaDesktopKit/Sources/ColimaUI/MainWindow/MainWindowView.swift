@@ -13,6 +13,9 @@ public struct MainWindowView: View {
         case filter
     }
 
+    /// Shade of the header and the inspector, which frame the plain container list. Works in light and dark.
+    static let paneShade = Color.primary.opacity(0.045)
+
     /// Creates the view.
     public init(model: MainWindowModel) {
         self.model = model
@@ -72,6 +75,7 @@ public struct MainWindowView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
+        .background(Self.paneShade)
     }
 
     private func commandButton(_ title: String, systemImage: String, _ command: MainMenuCommand) -> some View {
@@ -393,7 +397,7 @@ private struct EnvironmentInspector: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(MainWindowView.paneShade)
     }
 }
 
