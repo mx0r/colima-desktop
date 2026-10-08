@@ -33,7 +33,8 @@ socket, so the docker CLI is not needed.
   `5m 30s`, `42s`) and count up while the menu is open. Each container has:
   - details (image, status, ID, created, Compose service, ports; more than one port gets its own
     **Ports** submenu with its Open items),
-  - **Logs…** — follow/pause, filter with highlighting, timestamps, stderr in red, markers you
+  - **Logs…** — follow/pause, filter with highlighting, timestamps, stderr in red, terminal color
+    codes removed, markers you
     insert yourself, copy and save,
   - **Terminal…** — an embedded shell in the container,
   - **Open localhost:PORT** for each published TCP port,

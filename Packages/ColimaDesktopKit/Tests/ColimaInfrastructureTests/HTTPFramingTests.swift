@@ -166,6 +166,18 @@ struct LogDecodingTests {
         #expect(abs(timestamp.timeIntervalSince1970 - 1_791_269_368.909696474) < 0.000_01)
     }
 
+    @Test("Terminal color codes are removed from log lines, split across chunks too")
+    func assembleColors() throws {
+        var assembler = LogLineAssembler(parsesTimestamps: true)
+        let bytes = Array("2026-10-06T06:49:19.482484Z \u{1B}[38;5;214m[warning] deprecated\u{1B}[0m\n".utf8)
+        let cut = 33 // inside the first escape sequence
+        var lines = assembler.feed(Array(bytes[..<cut]), stream: .stderr)
+        lines += assembler.feed(Array(bytes[cut...]), stream: .stderr)
+        let line = try #require(lines.first)
+        #expect(line.text == "[warning] deprecated")
+        #expect(line.timestamp != nil)
+    }
+
     @Test("Overlong lines are split")
     func overlongLine() {
         var assembler = LogLineAssembler(parsesTimestamps: false, maxLineBytes: 4)
