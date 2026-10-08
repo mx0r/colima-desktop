@@ -4,6 +4,22 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.8.0-beta.3</title>
+            <pubDate>Thu, 08 Oct 2026 06:48:40 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.3</sparkle:fullReleaseNotesLink>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>44</sparkle:version>
+            <sparkle:shortVersionString>0.8.0-beta.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **Colima Desktop window.** Open Colima Desktop in the menu shows the containers (filterable, with their actions and details) and the environment in one window, with a menu bar. Starting the app again shows it too.
+- **Quitting asks about Colima.** Quitting leaves Colima and its containers running; the app now says so and offers Stop Colima and Quit. "Don't ask again" remembers the answer, and Settings → General → Reset Confirmations brings the question back.
+
+[All changes in 0.8.0-beta.3 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.8.0-beta.3)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.8.0-beta.3/ColimaDesktop-0.8.0-beta.3.dmg" length="7309557" type="application/octet-stream" sparkle:edSignature="3R3bHl1JRPTCk7CXbjgY42hUtWwoAuSuJ5T9TRdJheJ8emy5kKuAOgJmG9wJ752QKn6aRmZboG5WKsl52kojBQ=="></enclosure>
+        </item>
+        <item>
             <title>0.8.0-beta.2</title>
             <pubDate>Wed, 07 Oct 2026 19:44:59 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
