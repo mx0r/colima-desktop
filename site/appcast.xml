@@ -4,6 +4,20 @@
         <title>Colima Desktop</title>
         <link>https://github.com/mx0r/colima-desktop</link>
         <item>
+            <title>0.8.1</title>
+            <pubDate>Thu, 08 Oct 2026 17:38:29 +0000</pubDate>
+            <link>https://github.com/mx0r/colima-desktop</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/mx0r/colima-desktop/releases/tag/v0.8.1</sparkle:fullReleaseNotesLink>
+            <sparkle:version>55</sparkle:version>
+            <sparkle:shortVersionString>0.8.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[- **Clean logs for colored output.** Programs that color their logs (RabbitMQ, for example) no longer show codes such as `[38;5;214m` and `[0m` in the logs window, nor in what Copy and Save export.
+
+[All changes in 0.8.1 on GitHub](https://github.com/mx0r/colima-desktop/releases/tag/v0.8.1)
+]]></description>
+            <enclosure url="https://github.com/mx0r/colima-desktop/releases/download/v0.8.1/ColimaDesktop-0.8.1.dmg" length="7332138" type="application/octet-stream" sparkle:edSignature="pPQeRokheyHYSWnA5cAs5Y5o4w2YCoCHVSFLJZongUi1Lv2bD7w82UPLD5LSE2Z14EvOfg7cSv8SXTZhibFNBQ=="></enclosure>
+        </item>
+        <item>
             <title>0.8</title>
             <pubDate>Thu, 08 Oct 2026 07:14:16 +0000</pubDate>
             <link>https://github.com/mx0r/colima-desktop</link>
